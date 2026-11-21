@@ -1630,7 +1630,7 @@ do
 		end
 	end))
 
-	local title = "Atlas+ by iblame._"
+	local title = "atlas+ by blub"
 	local uicolor = _G.uicolor and _G.uicolor or Color3.fromRGB(41, 74, 122)
 	local isDesktop = ScreenGui.AbsoluteSize.X >= 850 and ScreenGui.AbsoluteSize.Y >= 500
 
