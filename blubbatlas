@@ -2310,7 +2310,7 @@ do
 	do
 		local clone = uiParts.bar:Clone()
 		local indicator = clone.Indicator
-		clone.Title.Text = title
+		clone.Title.Text = "atlas+ by blub"
 		clone.Parent = ImageLabel
 
 		clone.InputBegan:Connect(function(n)
