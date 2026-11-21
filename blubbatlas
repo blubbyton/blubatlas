@@ -1,5 +1,18 @@
 -- discord.gg/syncrypt
 
+-- Refresh an existing Atlas window before the duplicate-start guard returns.
+-- Keep this scoped to the main title bar; console and settings labels are unchanged.
+pcall(function()
+	local existingGui = _G.atlas
+	if typeof(existingGui) ~= "Instance" then return end
+	local window = existingGui:FindFirstChild("Window")
+	local bar = window and window:FindFirstChild("Bar")
+	local heading = bar and bar:FindFirstChild("Title")
+	if heading and heading:IsA("TextLabel") then
+		heading.Text = "atlas+ by blub"
+	end
+end)
+
 if _G.loading then return end
 _G.loading = true
 if not getthreadidentity or getthreadidentity()<8 then return(cloneref and cloneref(game:GetService("StarterGui")) or game:GetService("StarterGui")):SetCore("SendNotification",{Title="Warning",Text="Your executor is not supported.",Duration=10})end
