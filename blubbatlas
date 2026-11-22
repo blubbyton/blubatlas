@@ -664,6 +664,15 @@ local cfg = {
 		closeroundsonly = false,
 		trailhue = 190,
 		uihue = 215,
+		rainbowui = false,
+		rainbowspeed = 10,
+		uibrightness = 100,
+		uioutline = false,
+		outlinehue = 190,
+		outlinebrightness = 100,
+		outlineneon = true,
+		outlinethickness = 2,
+		betterrefreshflames = false,
 		viewhitboxes = false,
 		viewmovementtrail = false,
 		precise = false,
@@ -2751,7 +2760,7 @@ do
 						ui.Notify(text, "Tween must be enabled in config tab")
 					elseif not isOn and options and options.Hook and (not isfunctionhooked or not restorefunction or not setthreadidentity or not getthreadidentity or getthreadidentity() < 8) then
 						ui.Notify(text, "Your exploit does not support hooking functions")
-					elseif not isOn and options and options.FaceFires and not cfg.face.fires then
+					elseif not isOn and options and options.FaceFires and not cfg.face.fires and not cfg.rbc.betterrefreshflames then
 						ui.Notify(text, "Face fires must be enabled")
 					elseif not isOn and options and options.Cannon and cfg.vars.movement == "Walk" and not cfg.vars.cannon then
 						ui.Notify(text, "You must enable the red cannon")
@@ -5823,7 +5832,7 @@ do
 			tracked.stickbugtext[n] = true
 		elseif (L == "Gust" or L == "TornadoInstance") and cfg.combat.killwindy then
 			tracked.avoid[n] = 22
-		elseif L == "PetalPart" and (cfg.autofarm.farmpetals or cfg.autoquest.blooms) then
+		elseif L == "PetalPart" and (cfg.autofarm.farmblooms or cfg.autofarm.farmpetals or cfg.autoquest.blooms) then
 			tracked.petals[n] = true
 		end
 	end))
@@ -6170,7 +6179,7 @@ do
 
 	watchFlames = function(enable)
 		if not enable or connections:Get("flames") then
-			if not enable and not cfg.face.fires and not cfg.autofarm.farmfires and not cfg.autofarm.autoscorchingstar then
+			if not enable and not cfg.face.fires and not cfg.autofarm.farmfires and not cfg.autofarm.autoscorchingstar and not cfg.rbc.betterrefreshflames then
 				connections:Cancel("flames")
 				connections:Cancel("flames2")
 			end
@@ -41958,6 +41967,8 @@ do
 										Position = effectData.P,
 										Size = 1.4 + 0.35 * (math.min(effectData.T, 6) - 1) / 5,
 										T = math.min(effectData.T, 6),
+										Born = os.clock(),
+										ExpiresAt = os.clock() + math.min(effectData.T, 6),
 										Dark = effectData.D,
 									}
 
@@ -41965,7 +41976,7 @@ do
 									threadCount += 1
 
 									threads.list[threadCount] = task.delay(flameData.T, function()
-										if not (not tracked or flameData.Dark) then
+										if tracked and tracked.flames[effectData.P] == flameData and os.clock() >= flameData.ExpiresAt then
 											tracked.flames[effectData.P] = nil
 										end
 									end)
@@ -41985,9 +41996,11 @@ do
 									threadCount += 1
 									flameEntry.Dark = effectData.D
 									flameEntry.T = math.min(effectData.T, 6)
+									flameEntry.Born = os.clock()
+									flameEntry.ExpiresAt = os.clock() + flameEntry.T
 
 									threads.list[threadCount] = task.delay(flameEntry.T, function()
-										if tracked then
+										if tracked and tracked.flames[effectData.P] == flameEntry and os.clock() >= flameEntry.ExpiresAt then
 											tracked.flames[effectData.P] = nil
 										end
 									end)
@@ -42009,7 +42022,7 @@ do
 									return true
 								end
 							else
-								local petalEntry = { Name = true, ZoneName = effectData.ZoneName, Position = effectData.GoalPos }
+								local petalEntry = { Name = true, ZoneName = effectData.ZoneName, Position = effectData.GoalPos, ExpiresAt = os.clock() + (tonumber(effectData.Duration) or 3) }
 								threadCount += 1
 								tracked.petals[petalEntry] = true
 
@@ -51175,6 +51188,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					return
 				end
 
+				if trackedKey ~= "petals" and state.rbcCombat and state.rbcCombat:PetalTarget(state.rbcCombat.activeOptions or {}) then return true end
 				if not ((object.Name == true or object.Parent) and (object.Name ~= true or not trackedKey or not (not hasId and not tracked[trackedKey][object] or not (not hasId or tracked[trackedKey][object.ID])))) then
 					break
 				end
@@ -51200,7 +51214,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 				task.delay(3, function()
 					touchedMarks[object] = nil
 				end)
-			elseif trackedKey ~= "flames" then
+			elseif trackedKey ~= "flames" and trackedKey ~= "petals" then
 				tracked[trackedKey][object.Name == true and hasId and object.ID or object] = nil
 			end
 
@@ -51711,6 +51725,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 			local now = os.clock()
 
 			while true do
+				if state.rbcCombat and state.rbcCombat:PetalTarget(state.rbcCombat.activeOptions or {}) then return true end
 				if not RunService.Heartbeat:Wait() or not ((token.Name == true or token.Parent) and not (distanceTo(token.Position) > 200)) then
 					return
 				elseif not (not (distanceTo(token.Position, true) < 4) and not (deadline < os.clock()) and not (os.clock() - now > 4)) then
@@ -51724,7 +51739,17 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 		end
 
 		collectTarget = function(options)
+			state.rbcCombat.activeOptions = options
+			if state.rbcCombat and state.rbcCombat:CollectPetal(options) then return true end
+			if buffs.Bear and state.smiley then
+				local smiley = state.smiley:Find(options)
+				if smiley and state.smiley:Step(options,smiley) then return true end
+			end
 			local targetKind, targetObject = pickTarget(options)
+			if targetKind and state.rbcCombat then
+				local point = targetObject and targetObject.Position
+				state.rbcCombat:SetIntent(targetKind, point, options)
+			end
 			if targetKind == "Token" then
 				return collectToken(targetObject)
 			end
@@ -51782,7 +51807,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 			end
 
 			if targetKind == "Petal" then
-				return collectObject(targetObject, "petals", 6)
+				return state.rbcCombat:CollectPetal(options)
 			end
 
 			if targetKind == "Cloud" then
@@ -51840,16 +51865,179 @@ do
 		end
 	end
 
+	function combat:PetalTarget(options)
+		if not (cfg.autofarm.farmblooms or cfg.autofarm.farmpetals or options.petals) then return nil end
+		local now, root = os.clock(), getRootPart().Position
+		local best, score
+		for petal in pairs(tracked.petals) do
+			local point = petal.Position
+			local alive = type(petal) == "table" or petal.Parent
+			local expires = type(petal) == "table" and petal.ExpiresAt
+			if alive and point and getFieldAt(point) == currentField and (not expires or expires > now) then
+				local travel = self:Flat(point-root).Magnitude / math.max(1, getHumanoid().WalkSpeed)
+				if (not expires or travel < expires-now) and (not options.avoid or not isPathClear(point, options.avoid))
+					and (not options.range or not options.origin or self:Flat(point-options.origin).Magnitude <= options.range) then
+					local urgency = expires and expires-now-travel or travel+10
+					if not score or urgency < score then best, score = petal, urgency end
+				end
+			end
+		end
+		return best
+	end
+
+	function combat:CollectPetal(options)
+		local petal = self:PetalTarget(options)
+		if not petal then return false end
+		local root = getRootPart().Position
+		local point = Vector3.new(petal.Position.X, root.Y, petal.Position.Z)
+		self:SetIntent("Catching bloom petal", point, options)
+		getHumanoid():MoveTo(point)
+		-- The particle's removal/expiry owns completion; proximity is not proof of a catch.
+		return true
+	end
+
+	function combat:SetIntent(label, point, options)
+		self.intent, self.intentTime = label, os.clock()
+		if point and (not self.intentPoint or self:Flat(point-self.intentPoint).Magnitude > 2) then
+			self.planned = nil
+			self.intentPoint = point
+		end
+		if point and options and cfg.rbc.viewmovementtrail then self:FillRoute(options, point) end
+	end
+
+	function combat:FillRoute(options, first)
+		if self.routeField ~= currentField then self.planned = nil; self.routeField = currentField end
+		self.planned = self.planned or {}
+		local root = getRootPart().Position
+		local cursor = first or root
+		local mobs = options.rbc and self:Mobs(currentField, root) or {}
+		for i = #self.planned, 1, -1 do
+			if getFieldAt(self.planned[i]) ~= currentField then table.remove(self.planned,i) end
+		end
+		if #self.planned > 0 then cursor = self.planned[#self.planned] end
+		for attempt = 1, 8 do
+			if #self.planned >= 2 then break end
+			local candidate = randomFieldPosition(options)
+			if candidate and self:Flat(candidate-cursor).Magnitude > 6
+				and self:Safe(candidate,cursor,currentField,mobs,nil,options)
+				and (options.loot or options.skipoverlap or (not cfg.autofarm.farmballoons2 and not cfg.autofarm.farmmarks) or questTasks:check(candidate)) then
+				table.insert(self.planned,candidate); cursor=candidate
+			end
+		end
+	end
+
+	function combat:NextFarmPoint(options, fallback)
+		local root = getRootPart().Position
+		local mobs = options.rbc and self:Mobs(currentField,root) or {}
+		while self.planned and #self.planned > 0 do
+			local candidate=table.remove(self.planned,1)
+			if self:Flat(candidate-root).Magnitude > 5 and self:Safe(candidate,root,currentField,mobs,nil,options) then
+				self.intentPoint=candidate
+				self:FillRoute(options,candidate)
+				return candidate
+			end
+		end
+		self:FillRoute(options,fallback)
+		return fallback
+	end
+
+	function combat:FlamePlan(field)
+		if not cfg.rbc.betterrefreshflames or not cfg.rbc.enabled or not gameGui.RBChallenge.Visible
+			or gameGui.RBChallenge.Position.X.Scale > 0.9 or gameApi:Cache("EquippedCollector") ~= "Dark Scythe" then return nil, false end
+		local scorch = buffs and buffs["Scorching Star Aura"]
+		local now = os.clock()
+		local best, remaining, waiting
+		for key, value in pairs(tracked.flames) do
+			local virtual = type(value) == "table"
+			local flame = virtual and value or key
+			local point = flame.Position
+			local particle = not virtual and flame:FindFirstChild("PF")
+			local normal = virtual and not flame.Dark or (not virtual and particle and particle.Color.Keypoints[1].Value.G > 0.2)
+			if normal and point and getFieldAt(point)==field and distanceTo(point,true)<30 then
+				local left = virtual and ((flame.ExpiresAt and flame.ExpiresAt-now) or flame.T) or nil
+				local born = virtual and flame.Born or type(value)=="number" and value or now
+				local ready = scorch and left and left>0 and left<=1.25 or not scorch and now-(born or now)>=1
+				if ready then
+					if not remaining or (left or 6)<remaining then best,remaining=flame,left or 6 end
+				elseif (scorch and left and left>1.25) or (not scorch and now-(born or now)<1) then waiting=true end
+			end
+		end
+		return best, waiting and not best or false
+	end
+
+	function combat:UpdatePanels()
+		if not _G.atlas or not _G.atlas.Parent then return end
+		if not self.upgradePanel or not self.upgradePanel.Parent then
+			local function panel(name, position, anchor, size)
+				local box=Instance.new("TextLabel")
+				box.Name=name; box.Position=position; box.AnchorPoint=anchor; box.Size=size
+				box.BackgroundColor3=Color3.fromRGB(24,28,35); box.BackgroundTransparency=0.12
+				box.TextColor3=Color3.new(1,1,1); box.Font=Enum.Font.Code; box.TextSize=14
+				box.TextXAlignment=Enum.TextXAlignment.Left; box.TextYAlignment=Enum.TextYAlignment.Top
+				box.TextWrapped=true; box.ZIndex=100; box.Parent=_G.atlas
+				local padding=Instance.new("UIPadding"); padding.PaddingLeft=UDim.new(0,10); padding.PaddingTop=UDim.new(0,8); padding.Parent=box
+				return box
+			end
+			local scroll=Instance.new("ScrollingFrame")
+			scroll.Name="AtlasUpgradeOverlay"; scroll.AnchorPoint=Vector2.new(1,0); scroll.Position=UDim2.new(1,-12,0,40)
+			scroll.Size=UDim2.new(0,245,0,220); scroll.BackgroundTransparency=1; scroll.ZIndex=100
+			scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y; scroll.CanvasSize=UDim2.new(); scroll.ScrollBarThickness=4; scroll.Parent=_G.atlas
+			self.upgradePanel=panel("Current RBC Upgrades",UDim2.new(),Vector2.new(),UDim2.new(1,-6,0,40))
+			self.upgradePanel.AutomaticSize=Enum.AutomaticSize.Y; self.upgradePanel.Parent=scroll
+			self.movementPanel=panel("Current Movement",UDim2.new(1,-12,1,-12),Vector2.new(1,1),UDim2.new(0,285,0,82))
+		end
+		local screen=localPlayer.PlayerGui:FindFirstChild("ScreenGui")
+		local prompt=screen and screen:FindFirstChild("RoboBearPrompt")
+		local frame=prompt and prompt:FindFirstChild("MainFrame")
+		local log=frame and frame:FindFirstChild("UpgradeLog")
+		local lines={"CURRENT RBC UPGRADES"}
+		if log then
+			for _, child in ipairs(log:GetChildren()) do
+				local title=child.Name=="UGEntry" and child:FindFirstChild("TitleLbl")
+				if title and title.Text~="" then table.insert(lines,title.Text) end
+			end
+		end
+		if #lines==1 then table.insert(lines,"No upgrades in the local log") end
+		self.upgradePanel.Text=table.concat(lines,"\n")
+		local character=localPlayer.Character
+		local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+		local root=character and character:FindFirstChild("HumanoidRootPart")
+		local label=self.intentTime and os.clock()-self.intentTime<3 and self.intent or "Travelling / farming"
+		if not root or not humanoid or humanoid.Health<=0 then label="Waiting for character"
+		elseif self:Flat(humanoid.WalkToPoint-root.Position).Magnitude<1 then label="At destination: "..(self.intent or "idle") end
+		self.movementPanel.Text="MOVING TO: "..label.."\nBear morph: "..(buffs and buffs.Bear and "active" or "inactive")
+	end
+
 	function combat:ApplyTheme()
-		local color = Color3.fromHSV((cfg.rbc.uihue or 215)/360, 0.66, 0.48)
-		_G.uicolor = color
-		self.themeOriginal = self.themeOriginal or setmetatable({}, { __mode = "k" })
-		for _, object in ipairs(_G.atlas and _G.atlas:GetDescendants() or {}) do
-			if object:IsA("GuiObject") and object.BackgroundTransparency < 1 then
-				local original = self.themeOriginal[object] or object.BackgroundColor3
-				self.themeOriginal[object] = original
-				local _, _, value = original:ToHSV()
-				object.BackgroundColor3 = Color3.fromHSV((cfg.rbc.uihue or 215)/360, 0.45, value)
+		local hue=(cfg.rbc.uihue or 215)/360
+		if cfg.rbc.rainbowui then hue=(os.clock()*(cfg.rbc.rainbowspeed or 10)/360)%1 end
+		local brightness=math.clamp((cfg.rbc.uibrightness or 100)/100,0.1,1)
+		_G.uicolor=Color3.fromHSV(hue,0.66,0.48*brightness)
+		self.themeOriginal=self.themeOriginal or setmetatable({}, {__mode="k"})
+		local borderColor=Color3.fromHSV((cfg.rbc.outlinehue or 190)/360,1,math.clamp((cfg.rbc.outlinebrightness or 100)/100,0,1))
+		if not self.themeScan or os.clock()-self.themeScan>1 then
+			self.themeScan=os.clock()
+			self.themeObjects=_G.atlas and _G.atlas:GetDescendants() or {}
+		end
+		for _, object in ipairs(self.themeObjects) do
+			if object:IsA("GuiObject") and object.BackgroundTransparency<1 then
+				local original=self.themeOriginal[object] or object.BackgroundColor3; self.themeOriginal[object]=original
+				local _,_,value=original:ToHSV()
+				object.BackgroundColor3=Color3.fromHSV(hue,0.45,value*brightness)
+				local eligible=object:IsA("Frame") or object:IsA("ScrollingFrame") or object:IsA("TextButton") or object:IsA("TextBox") or object:IsA("ImageButton")
+				local stroke=object:FindFirstChild("AtlasOutline")
+				local glow=object:FindFirstChild("AtlasOutlineGlow")
+				if eligible and cfg.rbc.uioutline then
+					if not stroke then stroke=Instance.new("UIStroke"); stroke.Name="AtlasOutline"; stroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border; stroke.Parent=object end
+					stroke.Color=borderColor; stroke.Thickness=cfg.rbc.outlinethickness or 2; stroke.Enabled=true
+					if cfg.rbc.outlineneon then
+						if not glow then glow=Instance.new("UIStroke"); glow.Name="AtlasOutlineGlow"; glow.ApplyStrokeMode=Enum.ApplyStrokeMode.Border; glow.Parent=object end
+						glow.Color=borderColor; glow.Thickness=(cfg.rbc.outlinethickness or 2)+4; glow.Transparency=0.75; glow.Enabled=true
+					elseif glow then glow.Enabled=false end
+				else
+					if stroke then stroke.Enabled=false end
+					if glow then glow.Enabled=false end
+				end
 			end
 		end
 	end
@@ -51883,6 +52071,7 @@ do
 		self.driving, self.target, self.lastGoal = nil, nil, nil
 		self.lastUpdate = nil
 		self.progressPosition, self.progressTime = nil, nil
+		self.planned = nil
 		self:ClearVisuals()
 	end
 
@@ -51926,15 +52115,36 @@ do
 				part.Material = Enum.Material.Neon; part.CastShadow = false; part.Parent = self.route
 			end
 			part.Color = color
-			part.Size = Vector3.new(0.18, 0.18, (b-a).Magnitude)
+			part.Size = Vector3.new(0.32, 0.32, (b-a).Magnitude)
+			local line = part:FindFirstChild("AlwaysVisible")
+			if not line then
+				line = Instance.new("LineHandleAdornment"); line.Name = "AlwaysVisible"
+				line.Adornee = part; line.AlwaysOnTop = true; line.ZIndex = 10; line.Thickness = 4; line.Parent = part
+			end
+			line.Color3 = color; line.Length = (b-a).Magnitude
+			line.CFrame = CFrame.new(0, 0, (b-a).Magnitude/2)
 			part.CFrame = CFrame.lookAt((a+b)*0.5, b)
 		end
-		local origin = startPos - Vector3.new(0, 2.5, 0)
-		segment(origin, origin+delta)
-		for distance = 2, delta.Magnitude, 4 do
-			local tip = origin+direction*distance
-			segment(tip-direction*1.2+side*0.7, tip)
-			segment(tip-direction*1.2-side*0.7, tip)
+		local points = { destination }
+		for _, point in ipairs(self.planned or {}) do
+			if #points >= 3 then break end
+			if self:Flat(point-points[#points]).Magnitude > 2 then table.insert(points,point) end
+		end
+		local cursor=startPos
+		for _, point in ipairs(points) do
+			local leg=self:Flat(point-cursor)
+			if leg.Magnitude>1 then
+				local forward=leg.Unit
+				local perpendicular=Vector3.new(-forward.Z,0,forward.X)
+				local origin=cursor-Vector3.new(0,2.5,0)
+				segment(origin,origin+leg)
+				for distance=2,leg.Magnitude,4 do
+					local tip=origin+forward*distance
+					segment(tip-forward*1.5+perpendicular,tip)
+					segment(tip-forward*1.5-perpendicular,tip)
+				end
+			end
+			cursor=point
 		end
 		for _, part in ipairs(self.route:GetChildren()) do
 			if tonumber(part.Name) > index then part:Destroy() end
@@ -52290,6 +52500,8 @@ do
 		if destination then
 			if not self.lastGoal or self:Flat(destination - self.lastGoal).Magnitude > 0.75
 				or not self.lastMove or self.lastStep - self.lastMove >= 0.1 then
+				self:SetIntent(target and "Star Saw target" or "Dodge", destination)
+				self.planned = nil
 				humanoid:MoveTo(destination)
 				self.lastGoal, self.lastMove = destination, self.lastStep
 			end
@@ -52305,14 +52517,14 @@ do
 
 	-- Clear drawings during conversion, round menus, death, disabling, and unload.
 	connections:Add("rbccombatvisuals", RunService.Heartbeat:Connect(function()
-		if cfg and (not combat.themeUpdated or os.clock() - combat.themeUpdated > 1) then
+		if cfg and (not combat.themeUpdated or os.clock() - combat.themeUpdated > (cfg.rbc.rainbowui and 0.1 or 1)) then
 			combat.themeUpdated = os.clock()
 			combat:ApplyTheme()
+			combat:UpdatePanels()
 		end
 		if not cfg or not cfg.rbc.enabled or not gameGui.RBChallenge.Visible or gameGui.RBChallenge.Position.X.Scale > 0.9 then
-			if combat.visuals then combat:ClearVisuals() end
+			if combat.highlight then combat.highlight:Destroy(); combat.highlight=nil end
 			combat.target = nil
-			return
 		end
 		local character = localPlayer.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -52357,7 +52569,7 @@ do
 	end
 
 	function smiley:Find(options)
-		if not options.rbc and not cfg.autofarm.betterlineups and not (cfg.autofarm.gooundersmiley and options.gooquest) then
+		if not buffs.Bear and not options.rbc and not cfg.autofarm.betterlineups and not (cfg.autofarm.gooundersmiley and options.gooquest) then
 			self.session = nil
 			return nil
 		end
@@ -52436,6 +52648,7 @@ do
 		end
 		local center = Vector3.new(token.Position.X, getRootPart().Position.Y, token.Position.Z)
 		local goal
+		if buffs.Bear then session.deadline = now; session.ready = now end
 		if now < session.deadline then
 			goal = self:BuffTarget(options, session.deadline - now)
 			if not goal and cfg.autofarm.gooundersmiley and options.gooquest then
@@ -52469,6 +52682,7 @@ do
 			end
 		end
 		if self:Safe(goal, options) then
+			state.rbcCombat:SetIntent(goal == center and "Smiley" or "Smiley preparation", goal, options)
 			getHumanoid():MoveTo(goal)
 			if options.rbc then state.rbcCombat:DrawPath(getRootPart().Position, goal) end
 			return true
@@ -52515,6 +52729,7 @@ do
 end
 
 		farmStep = function(options)
+			if state.rbcCombat:CollectPetal(options) then return end
 			if options.rbc and state.rbcCombat:RecoverMovement(options) then return end
 			options.smileyprep = state.smiley:Find(options)
 			if options.smileyprep and state.smiley:Step(options, options.smileyprep) then return end
@@ -52527,6 +52742,7 @@ end
 			if not collectTarget(options) and not options.ignoreflower and (not nextMoveTime or nextMoveTime < os.clock()) then
 				local target = randomFieldPosition(options)
 				if options.rbc then target = state.rbcCombat:FarmDestination(options, target) end
+				if cfg.rbc.viewmovementtrail then target = state.rbcCombat:NextFarmPoint(options, target) end
 
 				if not target or not options.loot and not options.skipoverlap and not (not cfg.autofarm.farmballoons2 and not cfg.autofarm.farmmarks or questTasks:check(target)) then
 					nextMoveTime = os.clock() + 0.2
@@ -52536,6 +52752,7 @@ end
 					if distance > 5 then
 						local travelTime = distance / getHumanoid().WalkSpeed
 						nextMoveTime = os.clock() + (travelTime > 1 and 1 or travelTime)
+						state.rbcCombat.intent, state.rbcCombat.intentTime = "Farming flowers", os.clock()
 						getHumanoid():MoveTo(target)
 						if options.rbc then state.rbcCombat:DrawPath(getRootPart().Position, target) end
 					else
@@ -52647,7 +52864,7 @@ end
 
 		setFacing = function(enabled)
 			if not enabled or threads:Get("face") then
-				if not enabled and not cfg.face.balloons and not cfg.face.gballoons and not cfg.face.bubbles and not cfg.face.gbubbles and not cfg.face.blooms and not cfg.face.center and not cfg.face.fires then
+				if not enabled and not cfg.face.balloons and not cfg.face.gballoons and not cfg.face.bubbles and not cfg.face.gbubbles and not cfg.face.blooms and not cfg.face.center and not cfg.face.fires and not cfg.rbc.betterrefreshflames then
 					threads:Cancel("face")
 					state.stopdig = nil
 
@@ -52812,6 +53029,11 @@ end
 								end
 							end
 
+							if cfg.rbc.betterrefreshflames and state.rbcCombat then
+								local flame, hold = state.rbcCombat:FlamePlan(field)
+								if flame then faceTarget = {v=flame, flame=true, d=distanceTo(flame.Position,true)} end
+								state.stopdig = hold or nil
+							end
 							if cfg.face.method ~= "BodyGyro" then
 								if faceTarget then
 									if UserInputService.MouseIcon ~= "rbxasset://textures/MouseLockedCursor.png" then
@@ -67634,6 +67856,10 @@ which bees and get all 3 targets if
 				local rbcEquipmentFolder = controls.rbc.AddFolder("Equipment Settings", true)
 				local rbcAmuletFolder = controls.rbc.AddFolder("Amulet Settings", true)
 				local combatFolder = controls.rbc.AddFolder("Combat Tracking", true)
+				combatFolder.AddSwitch("Better Refresh Flames", function(enabled)
+					watchFlames(enabled); setFacing(enabled)
+					if enabled then state.rbcCombat:EnsureFX() else state.stopdig=nil end
+				end, "rbc", "betterrefreshflames", { Tooltip = "Dark Scythe: with Scorching Star, aim at flames with at most 1.25s left; otherwise wait 1s before refreshing. Uses existing auto-dig." })
 				combatFolder.AddSlider("Trail Color Hue", nil, 0, 360, "rbc", "trailhue", { Left = true })
 				combatFolder.AddSlider("Entire UI Color Hue", function() state.rbcCombat:ApplyTheme() end, 0, 360, "rbc", "uihue", { Left = true })
 				task.defer(function() state.rbcCombat:ApplyTheme() end)
@@ -67653,7 +67879,7 @@ which bees and get all 3 targets if
 				end, "rbc", "viewhitboxes", { Tooltip = "Shows client-side enemy body and saw part bounds. Server damage hitboxes may differ." })
 				combatFolder.AddSwitch("View Movement Trail", function()
 					state.rbcCombat:ClearVisuals()
-				end, "rbc", "viewmovementtrail", { Tooltip = "Neon arrows show the full current movement segment; updates whenever the destination changes." })
+				end, "rbc", "viewmovementtrail", { Tooltip = "Always-visible arrows show the current command and up to two queued farming destinations. Priority targets can change the route." })
 
 				controls["Auto RBC"] = rbcFolder.AddSwitch("Auto RBC", function(n)
 					watchRbcMobs(n)
@@ -68435,6 +68661,16 @@ more accurate dodging]],
 			do
 				local debug_ = controls.debug
 				local Debug = debug_.AddFolder("Debug")
+				local appearance = debug_.AddFolder("GUI Colors and Outlines", true)
+				local function restyle() state.rbcCombat:ApplyTheme() end
+				appearance.AddSwitch("Rainbow GUI", restyle, "rbc", "rainbowui")
+				appearance.AddSlider("Rainbow Speed (degrees/sec)", restyle, 1, 90, "rbc", "rainbowspeed", {Left=true})
+				appearance.AddSlider("GUI Brightness", restyle, 10, 100, "rbc", "uibrightness", {Left=true})
+				appearance.AddSwitch("Outline Boxes and Tabs", restyle, "rbc", "uioutline")
+				appearance.AddSlider("Outline Color Hue", restyle, 0, 360, "rbc", "outlinehue", {Left=true})
+				appearance.AddSlider("Outline Brightness", restyle, 0, 100, "rbc", "outlinebrightness", {Left=true})
+				appearance.AddSwitch("Neon Outline", restyle, "rbc", "outlineneon")
+				appearance.AddSlider("Outline Thickness", restyle, 1, 8, "rbc", "outlinethickness", {Left=true})
 				local antiLagFolder = debug_.AddFolder("Anti Lag", true)
 				local detectedFolder = debug_.AddFolder("Detected Features")
 
