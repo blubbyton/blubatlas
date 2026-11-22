@@ -6508,6 +6508,111 @@ inventory.Fetch = function(owner)
 	return owned
 end
 
+do
+	local rates = { gained = {}, used = {} }
+	inventory.hourly = rates
+	function rates:Observe(snapshot, now)
+		if type(snapshot) ~= "table" then return false end
+		local copy = {}
+		for name, count in pairs(snapshot) do
+			if type(name) ~= "string" or type(count) ~= "number" or count < 0 or count ~= count or count == math.huge then return false end
+			copy[name] = count
+		end
+		if not self.previous then
+			self.previous, self.started = copy, now
+			return true
+		end
+		local names = {}
+		for name in pairs(copy) do names[name] = true end
+		for name in pairs(self.previous) do names[name] = true end
+		for name in pairs(names) do
+			local delta = (copy[name] or 0) - (self.previous[name] or 0)
+			if delta > 0 then self.gained[name] = (self.gained[name] or 0) + delta
+			elseif delta < 0 then self.used[name] = (self.used[name] or 0) - delta end
+		end
+		self.previous = copy
+		return true
+	end
+	function rates:Sample()
+		local ok, snapshot = pcall(function()
+			if not inventory or not gameApi or type(gameApi:Cache("Eggs")) ~= "table" then return nil end
+			return inventory:Fetch()
+		end)
+		if not ok or not snapshot or (not self.previous and not next(snapshot)) then return false end
+		return self:Observe(snapshot, os.clock())
+	end
+	function rates:Kind(name)
+		local key = string.lower(name):gsub("[%s_%-]", "")
+		if key == "ticket" or key == "tickets" then return "ticket" end
+		for _, color in ipairs({ "Glitched", "Red", "Blue", "White" }) do
+			if key == string.lower(color).."drive" then return "drive", color end
+		end
+		for _, excluded in ipairs({ "planter", "token", "beequip", "quest tracker", "the games", "xmas", "cheater flag", "roblox", "plastic egg" }) do
+			if string.find(string.lower(name), excluded, 1, true) then return "excluded" end
+		end
+		return "material"
+	end
+	function rates:Report(now)
+		local seconds = self.started and math.max(0, now-self.started) or 0
+		local factor = seconds >= 1 and 3600/seconds or 0
+		local report = { seconds=seconds, gained=0, used=0, tickets=0, materials={}, drives={} }
+		for _, color in ipairs({ "Glitched", "Red", "Blue", "White" }) do report.drives[color]={gained=0,used=0} end
+		local names={}
+		for name in pairs(self.gained) do names[name]=true end
+		for name in pairs(self.used) do names[name]=true end
+		for name in pairs(names) do
+			local gain,use=(self.gained[name] or 0)*factor,(self.used[name] or 0)*factor
+			local kind,color=self:Kind(name)
+			if kind=="ticket" then report.tickets+=use
+			elseif kind=="drive" then report.drives[color].gained+=gain; report.drives[color].used+=use
+			elseif kind=="material" then
+				report.gained+=gain; report.used+=use
+				table.insert(report.materials,{name=name,gained=gain,used=use})
+			end
+		end
+		table.sort(report.materials,function(a,b) return a.name<b.name end)
+		return report
+	end
+	function rates:AddToWebhook(fields, extraEmbeds)
+		self:Sample()
+		local report=self:Report(os.clock())
+		local function number(n) return string.format("%.2f",n) end
+		table.insert(fields,{name="Materials Used / Hour",value=number(report.used),inline=true})
+		table.insert(fields,{name="Materials Gained / Hour",value=number(report.gained),inline=true})
+		table.insert(fields,{name="Tickets Spent / Hour",value=number(report.tickets),inline=true})
+		local driveLines={}
+		for _,color in ipairs({"Glitched","Red","Blue","White"}) do
+			local drive=report.drives[color]
+			table.insert(driveLines,color..": +"..number(drive.gained).." gained/h | "..number(drive.used).." used/h")
+		end
+		table.insert(fields,{name="Drives / Hour",value=table.concat(driveLines,"\n"),inline=false})
+		local chunk={"Session averages from observed inventory changes ("..math.floor(report.seconds).."s).",
+			"Simultaneous gains/spends between samples may be netted. Materials exclude tickets, drives and equipment.",
+			"Material | gained/h | used/h"}
+		local size=#table.concat(chunk,"\n")
+		local function flush()
+			table.insert(extraEmbeds,{title="Hourly Material Breakdown",description=table.concat(chunk,"\n")})
+			chunk={}; size=0
+		end
+		for _,entry in ipairs(report.materials) do
+			local line=entry.name.." | "..number(entry.gained).." | "..number(entry.used)
+			if size+#line+1>3500 then flush() end
+			table.insert(chunk,line); size+=#line+1
+		end
+		if #report.materials==0 then table.insert(chunk,"No material changes observed yet.") end
+		if #chunk>0 then flush() end
+	end
+	-- Read only: this observes local inventory and never sends a webhook itself.
+	rates:Sample()
+	connections:Add("hourlyinventory",RunService.Heartbeat:Connect(function()
+		if not cfg or not inventory or (state and state.disconnect) then return end
+		local now=os.clock()
+		if rates.lastSample and now-rates.lastSample<0.1 then return end
+		rates.lastSample=now
+		rates:Sample()
+	end))
+end
+
 inventory.Has = function(owner, required, v63, v64)
 	for k, requirement in pairs(required) do
 		local timeKey = requirement == "lessthan10" and k .. "lessthan10" or k
@@ -43501,6 +43606,7 @@ do
 		message.embeds = embeds
 		local fields2 = message.embeds[1].fields
 		local extraEmbeds = {}
+		inventory.hourly:AddToWebhook(fields2, extraEmbeds)
 		local response = nil
 
 		if cfg.webhook.nectars then
