@@ -673,6 +673,26 @@ local cfg = {
 		outlineneon = true,
 		outlinethickness = 2,
 		betterrefreshflames = false,
+		lowhealthretreat = false,
+		retreathealth = 35,
+		avoidcrowds = false,
+		enemyclearance = 3,
+		smartlinks = false,
+		shorthops = false,
+		petalmargin = 0,
+		smileydetour = 55,
+		stingerreserve = 0,
+		cloudreserve = 0,
+		cloudminround = 1,
+		cloudstalldelay = 30,
+		qolrares = false,
+		qolpuffalerts = false,
+		qolpuffhighlight = false,
+		autoglitter = false,
+		glitterhivecolor = "Blue",
+		glitterfields = false,
+		glitterrounds = false,
+		goodcogupgrades = false,
 		viewhitboxes = false,
 		viewmovementtrail = false,
 		precise = false,
@@ -767,6 +787,7 @@ local cfg = {
 		nectars = false,
 	},
 	webhook = {
+		rbcgraph = false,
 		enabled = false,
 		url = "",
 		interval = 5,
@@ -3609,7 +3630,7 @@ do
 					if child.ClassName ~= "UIPadding" then
 						if child.ClassName ~= "UIListLayout" then
 							if child.ClassName ~= "UICorner" then
-								if child.Visible then
+								if child:IsA("GuiObject") and child.Visible then
 									measuredHeight += child.Size.Y.Offset + 4
 								end
 							end
@@ -3641,7 +3662,7 @@ do
 						if child.ClassName ~= "UIPadding" then
 							if child.ClassName ~= "UIListLayout" then
 								if child.ClassName ~= "UICorner" then
-									if child.Visible then
+									if child:IsA("GuiObject") and child.Visible then
 										if child.Name ~= "Dropdown" then
 											measuredHeight += child.Size.Y.Offset + 4
 										else
@@ -3654,7 +3675,7 @@ do
 					end
 
 					v79 = measuredHeight
-					TweenService:Create(clone4, TweenInfo.new(0, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { Size = v76 and UDim2.new(1, 0, 0, measuredHeight) or v }):Play()
+					TweenService:Create(clone4, TweenInfo.new(0, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { Size = v76 and UDim2.new(1, 0, 0, measuredHeight) or UDim2.new(1,0,0,23) }):Play()
 				end
 			end
 
@@ -5017,6 +5038,8 @@ do
 		rbc = ui.AddTab("RBC", "http://www.roblox.com/asset/?id=113324128574355", true),
 		webhook = ui.AddTab("Webhook", "rbxassetid://10723426722", true),
 		config = ui.AddTab("Config", "rbxassetid://10734950309", true),
+		qol = ui.AddTab("QOL", "rbxassetid://10709782845", true),
+		rbcboosts = ui.AddTab("RBC Boosts", "rbxassetid://10709782845", true),
 		debug = ui.AddTab("Debug", "rbxassetid://10709782845", true),
 	}
 
@@ -6509,7 +6532,7 @@ inventory.Fetch = function(owner)
 end
 
 do
-	local rates = { gained = {}, used = {} }
+	local rates = { gained = {}, used = {}, rbcGained = {}, rbcUsed = {}, rbcSeconds = 0 }
 	inventory.hourly = rates
 	function rates:Observe(snapshot, now)
 		if type(snapshot) ~= "table" then return false end
@@ -6527,6 +6550,10 @@ do
 		for name in pairs(self.previous) do names[name] = true end
 		for name in pairs(names) do
 			local delta = (copy[name] or 0) - (self.previous[name] or 0)
+			if self.rbcActive then
+				if delta>0 then self.rbcGained[name]=(self.rbcGained[name] or 0)+delta
+				elseif delta<0 then self.rbcUsed[name]=(self.rbcUsed[name] or 0)-delta end
+			end
 			if delta > 0 then self.gained[name] = (self.gained[name] or 0) + delta
 			elseif delta < 0 then self.used[name] = (self.used[name] or 0) - delta end
 		end
@@ -6539,7 +6566,11 @@ do
 			return inventory:Fetch()
 		end)
 		if not ok or not snapshot or (not self.previous and not next(snapshot)) then return false end
-		return self:Observe(snapshot, os.clock())
+		local now=os.clock()
+		local active=cfg and cfg.rbc and cfg.rbc.enabled and gameGui and gameGui.RBChallenge.Visible and gameGui.RBChallenge.Position.X.Scale<0.9
+		if active and self.rbcActive and self.rbcObserved then self.rbcSeconds+=math.max(0,now-self.rbcObserved) end
+		self.rbcActive,self.rbcObserved=active,now
+		return self:Observe(snapshot, now)
 	end
 	function rates:Kind(name)
 		local key = string.lower(name):gsub("[%s_%-]", "")
@@ -6611,6 +6642,84 @@ do
 		rates.lastSample=now
 		rates:Sample()
 	end))
+end
+
+do
+	local rates=inventory.hourly
+	rates.rares={}
+	for _,name in ipairs({"Gingerbread Bear","Tropical Drink","Marshmallow Bee","Super Smoothie","Purple Potion","Loaded Dice","Blue Extract","Red Extract","Star Treat","Atomic Treat","Magic Bean","Enzymes","Glitter","Glue","Oil","Stinger","Cloud Vial","Soft Wax","Hard Wax","Caustic Wax","Swirled Wax","Turpentine","Super-Acid","Star Jelly","Gold Egg","Diamond Egg","Mythic Egg","Gifted Gold Egg","Gifted Diamond Egg","Gifted Mythic Egg","Star Egg","Glitched Drive","Red Drive","Blue Drive","White Drive"}) do rates.rares[name]=true end
+	function rates:RareRows()
+		local rows={}
+		local factor=(self.rbcSeconds or 0)>=1 and 3600/self.rbcSeconds or 0
+		for name in pairs(self.rares) do
+			local gain=(self.rbcGained and self.rbcGained[name] or 0)*factor
+			local used=(self.rbcUsed and self.rbcUsed[name] or 0)*factor
+			if gain>0 or used>0 then table.insert(rows,{name=name,gained=gain,used=used}) end
+		end
+		table.sort(rows,function(a,b) return a.name<b.name end)
+		return rows
+	end
+	-- Local PNG renderer: paired horizontal bars, no external rendering service.
+	function rates:RenderRareGraph(rows, first, last)
+		local width,height=900,100+math.max(1,last-first+1)*32
+		local pixels=buffer.create(width*height*3)
+		local function pixel(x,y,color)
+			if x<0 or y<0 or x>=width or y>=height then return end
+			local p=(math.floor(y)*width+math.floor(x))*3
+			buffer.writeu8(pixels,p,color[1]);buffer.writeu8(pixels,p+1,color[2]);buffer.writeu8(pixels,p+2,color[3])
+		end
+		local function rect(x,y,w,h,c) for py=y,y+h-1 do for px=x,x+w-1 do pixel(px,py,c) end end end
+		local font={A="0E11111F111111",B="1E11111E11111E",C="0E11101010110E",D="1E11111111111E",E="1F10101E10101F",F="1F10101E101010",G="0E11101711110F",H="1111111F111111",I="0E04040404040E",J="0702020212120C",K="11121418141211",L="1010101010101F",M="111B1515111111",N="11191513111111",O="0E11111111110E",P="1E11111E101010",Q="0E11111115120D",R="1E11111E141211",S="0F10100E01011E",T="1F040404040404",U="1111111111110E",V="11111111110A04",W="11111115151B11",X="11110A040A1111",Y="11110A04040404",Z="1F01020408101F",["0"]="0E11131519110E",["1"]="040C040404040E",["2"]="0E11010204081F",["3"]="1E01010601011E",["4"]="02060A121F0202",["5"]="1F10101E01011E",["6"]="0E10101E11110E",["7"]="1F010204080808",["8"]="0E11110E11110E",["9"]="0E11110F01010E",["."]="00000000000C0C",["-"]="0000001F000000",["/"]="01010204081010"}
+		local function text(label,x,y,c,scale)
+			for i=1,#label do
+				local glyph=font[string.upper(label:sub(i,i))]
+				if glyph then for row=0,6 do local bits=tonumber(glyph:sub(row*2+1,row*2+2),16); for col=0,4 do if bit32.band(bits,2^(4-col))~=0 then rect(x+col*scale,y+row*scale,scale,scale,c) end end end end
+				x+=6*scale
+			end
+		end
+		local bg,ink,green,orange={18,23,33},{230,237,247},{56,220,140},{255,159,67}
+		rect(0,0,width,height,bg);text("RBC RARES PER HOUR",20,14,ink,2)
+		text("GAINED",540,20,green,2);text("USED",710,20,orange,2)
+		local maximum=1
+		for i=first,last do local r=rows[i];if r then maximum=math.max(maximum,r.gained,r.used) end end
+		for i=first,last do
+			local r=rows[i]
+			if r then
+				local y=62+(i-first)*32
+				text(r.name,12,y+5,ink,1)
+				rect(220,y,math.floor(r.gained/maximum*540),10,green)
+				rect(220,y+12,math.floor(r.used/maximum*540),10,orange)
+				text(string.format("%.1f",r.gained),775,y,green,1);text(string.format("%.1f",r.used),775,y+12,orange,1)
+			end
+		end
+		if #rows==0 then text("NO RARE CHANGES OBSERVED IN RBC YET",20,65,ink,2) end
+		local scan={};for y=0,height-1 do table.insert(scan,"\0"..buffer.readstring(pixels,y*width*3,width*3)) end
+		local raw=table.concat(scan)
+		local function be(n) return string.char(bit32.band(bit32.rshift(n,24),255),bit32.band(bit32.rshift(n,16),255),bit32.band(bit32.rshift(n,8),255),bit32.band(n,255)) end
+		local a,b=1,0;for i=1,#raw do a=(a+raw:byte(i))%65521;b=(b+a)%65521 end
+		local blocks={string.char(120,1)}
+		for i=1,#raw,65535 do local block=raw:sub(i,i+65534);local n=#block;local inv=65535-n;table.insert(blocks,string.char(i+n>#raw and 1 or 0,n%256,math.floor(n/256),inv%256,math.floor(inv/256))..block) end
+		table.insert(blocks,be(b*65536+a))
+		local crcTable={}
+		for n=0,255 do local c=n;for _=1,8 do c=bit32.bxor(bit32.rshift(c,1),bit32.band(c,1)==1 and 0xEDB88320 or 0) end;crcTable[n]=c end
+		local function chunk(kind,data)
+			local v=kind..data;local crc=0xFFFFFFFF
+			for i=1,#v do crc=bit32.bxor(bit32.rshift(crc,8),crcTable[bit32.band(bit32.bxor(crc,v:byte(i)),255)]) end
+			return be(#data)..v..be(bit32.bnot(crc))
+		end
+		return "\137PNG\13\10\26\10"..chunk("IHDR",be(width)..be(height)..string.char(8,2,0,0,0))..chunk("IDAT",table.concat(blocks))..chunk("IEND","")
+	end
+	function rates:SendRareGraph()
+		if not cfg.webhook.rbcgraph or not cfg.webhook.enabled or cfg.webhook.url=="" then return end
+		local rows=self:RareRows()
+		for first=1,math.max(1,#rows),14 do
+			local png=self:RenderRareGraph(rows,first,math.min(#rows,first+13))
+			local boundary="AtlasRareGraphBoundary"
+			local payload={username="atlas by blub",embeds={{title="RBC GRAPH - Rares Only",description="Gained vs used per active RBC hour. Observed inventory deltas; excludes treats and royal jelly.",image={url="attachment://rbc-rares.png"}}}}
+			local body="--"..boundary.."\r\nContent-Disposition: form-data; name=\"payload_json\"\r\nContent-Type: application/json\r\n\r\n"..HttpService:JSONEncode(payload).."\r\n--"..boundary.."\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"rbc-rares.png\"\r\nContent-Type: image/png\r\n\r\n"..png.."\r\n--"..boundary.."--\r\n"
+			httprequest({Method="POST",Url=cfg.webhook.url,Headers={["Content-Type"]="multipart/form-data; boundary="..boundary},Body=body},"Failed to send RBC rare graph:")
+		end
+	end
 end
 
 inventory.Has = function(owner, required, v63, v64)
@@ -43607,6 +43716,10 @@ do
 		local fields2 = message.embeds[1].fields
 		local extraEmbeds = {}
 		inventory.hourly:AddToWebhook(fields2, extraEmbeds)
+		if cfg.webhook.rbcgraph then
+			local ok,err=pcall(function() inventory.hourly:SendRareGraph() end)
+			if not ok then logger.warn("RBC graph:",err) end
+		end
 		local response = nil
 
 		if cfg.webhook.nectars then
@@ -51846,12 +51959,15 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 
 		collectTarget = function(options)
 			state.rbcCombat.activeOptions = options
+			if state.rbcCombat:Retreat(options) then return true end
 			if state.rbcCombat and state.rbcCombat:CollectPetal(options) then return true end
 			if buffs.Bear and state.smiley then
 				local smiley = state.smiley:Find(options)
 				if smiley and state.smiley:Step(options,smiley) then return true end
 			end
-			local targetKind, targetObject = pickTarget(options)
+			local targetObject = state.rbcCombat:SmartLink(options)
+			local targetKind = targetObject and "Token" or nil
+			if not targetObject then targetKind,targetObject=pickTarget(options) end
 			if targetKind and state.rbcCombat then
 				local point = targetObject and targetObject.Position
 				state.rbcCombat:SetIntent(targetKind, point, options)
@@ -51947,6 +52063,41 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 do
 	local combat = { sawParts = {}, samples = {}, mobSamples = {}, boxes = {}, lastScan = -math.huge }
 	state.rbcCombat = combat
+	do
+local qolIcons = {
+					Sticker = "Sticker",
+					["Gold Egg"] = "1471849394",
+					["Diamond Egg"] = "1471850677",
+					["Mythic Egg"] = "4520739302",
+					["Gifted Gold Egg"] = "1987255318",
+					["Gifted Diamond Egg"] = "1987257040",
+					["Gifted Mythic Egg"] = "6134473023",
+					["Star Egg"] = "2007771339",
+					["Gingerbread Bear"] = "6077173317",
+					["Tropical Drink"] = "3835877932",
+					["Marshmallow Bee"] = "3027672238",
+					["Super Smoothie"] = "5144657109",
+					["Purple Potion"] = "4935580111",
+					["Loaded Dice"] = "8055428094",
+					["Caustic Wax"] = "8277781666",
+					["Swirled Wax"] = "8277783113",
+					Turpentine = "8310376128",
+					Neonberry = "4483267595",
+					["Cloud Vial"] = "3030569073",
+					["Blue Extract"] = "2495936060",
+					["Red Extract"] = "2495935291",
+					["Star Treat"] = "2028603146",
+					["Star Jelly"] = "2319943273",
+					["Magic Bean"] = "2529092020",
+					Enzymes = "2584584968",
+					Glitter = "2542899798",
+					Glue = "2504978518",
+					Oil = "2545746569",
+				}
+
+		combat.rareIcons={}
+		for name,id in pairs(qolIcons) do combat.rareIcons[id]=name end
+	end
 
 	function combat:EnsureFX()
 		if self.fxReady then return end
@@ -51971,6 +52122,178 @@ do
 		end
 	end
 
+	function combat:FaceRefresh(flame)
+		local humanoid=getHumanoid()
+		if not flame then
+			if self.refreshRotate~=nil then humanoid.AutoRotate=self.refreshRotate;self.refreshRotate=nil end
+			return false
+		end
+		local root=getRootPart();local point=Vector3.new(flame.Position.X,root.Position.Y,flame.Position.Z)
+		if self:Flat(point-root.Position).Magnitude<0.2 then return false end
+		if self.refreshRotate==nil then self.refreshRotate=humanoid.AutoRotate end
+		humanoid.AutoRotate=false
+		if state.gyro then state.gyro.MaxTorque=Vector3.new(0,0,0) end
+		root.CFrame=CFrame.lookAt(root.Position,point)
+		return true
+	end
+
+	function combat:AutoGlitter(round, tasks)
+		if not cfg.rbc.autoglitter or not cfg.rbc.enabled or not gameGui.RBChallenge.Visible or gameGui.RBChallenge.Position.X.Scale>0.9 then return false end
+		local field=getFieldAt(getRootPart().Position)
+		if not field or not cfg.rbc.glitterfields or not cfg.rbc.glitterfields[field.Name]
+			or not cfg.rbc.glitterrounds or not cfg.rbc.glitterrounds["Round "..tostring(round)] then return false end
+		local mismatch=false
+		for _,quest in ipairs(tasks or {}) do
+			local color=quest.Pollen
+			if not color and quest.Field==field.Name then
+				local group=field:FindFirstChild("ColorGroup")
+				color=group and group.Value or "White"
+			end
+			if color and color~=(cfg.rbc.glitterhivecolor or cfg.rbc.preset)
+				and (not quest.Field or quest.Field==field.Name) and not string.find(quest.Text.Text,"Complete",1,true) then mismatch=true;break end
+		end
+		if not mismatch then return false end
+		local now=os.time();local previous=cache.Materials.glitter
+		if previous and now-previous.time<905 then return false end
+		if self.glitterAttempt and os.clock()-self.glitterAttempt<15 then return false end
+		self.glitterAttempt=os.clock()
+		if inventory:Use("Glitter") then
+			cache.Materials.glitter={field=field.Name,time=now};saveConfig(true)
+			self:SetIntent("Glitter for off-color RBC quest",nil)
+			return true
+		end
+		return false
+	end
+
+	function combat:UpdateQOL()
+		self.qolSeen=self.qolSeen or setmetatable({}, {__mode="k"})
+		self.qolMarks=self.qolMarks or {}
+		local wanted={}
+		if cfg.rbc.qolrares then
+			for token in pairs(tracked.tokens or {}) do
+				local virtual=type(token)=="table"
+				local decal=not virtual and token.Parent and token:FindFirstChild("FrontDecal")
+				local icon=virtual and token.Icon or decal and decal.Texture
+				local name=icon and self.rareIcons and self.rareIcons[string.match(tostring(icon),"%d+")]
+				if name and inventory.hourly.rares[name] then wanted[token]={point=token.Position,name=name,color=Color3.fromRGB(255,215,70)} end
+			end
+		end
+		local happenings=workspace:FindFirstChild("Happenings")
+		local puffs=happenings and happenings:FindFirstChild("Puffshrooms")
+		if cfg.rbc.qolpuffalerts or cfg.rbc.qolpuffhighlight then
+			for _,puff in ipairs(puffs and puffs:GetChildren() or {}) do
+				local top=puff:FindFirstChild("Puffball Top");local stem=puff:FindFirstChild("Puffball Stem")
+				local attachment=top and top:FindFirstChild("Attachment");local gui=attachment and attachment:FindFirstChild("Gui")
+				local row=gui and gui:FindFirstChild("NameRow");local label=row and row:FindFirstChild("TextLabel")
+				local rarity=label and string.match(label.Text,"(%a*)%s+Puffshroom")
+				if stem and (rarity=="Legendary" or rarity=="Mythic") then
+					local field=getFieldAt(stem.Position);local name=rarity.." Puffshroom - "..(field and field.Name or "unknown field")
+					if cfg.rbc.qolpuffalerts and not self.qolSeen[puff] then self.qolSeen[puff]=true;ui.Notify("Rare Puffshroom",name) end
+					if cfg.rbc.qolpuffhighlight then wanted[puff]={point=stem.Position,part=stem,name=name,color=Color3.fromRGB(230,95,255)} end
+				end
+			end
+		end
+		for key,entry in pairs(self.qolMarks) do
+			if not wanted[key] then entry.folder:Destroy();self.qolMarks[key]=nil end
+		end
+		local count=0;for _ in pairs(self.qolMarks) do count+=1 end
+		for key,data in pairs(wanted) do
+			local entry=self.qolMarks[key]
+			if not entry and count<26 then
+				local folder=Instance.new("Folder");folder.Name="AtlasQOLMarker";folder.Parent=workspace
+				local part=data.part or (typeof(key)=="Instance" and key:IsA("BasePart") and key)
+				local anchor
+				if not part then
+					anchor=Instance.new("Part");anchor.Name="AtlasRareAnchor";anchor.Size=Vector3.new(2,2,2)
+					anchor.Anchored=true;anchor.Transparency=1;anchor.CanCollide=false;anchor.CanTouch=false;anchor.CanQuery=false;anchor.Parent=folder;part=anchor
+				end
+				local box=Instance.new("BoxHandleAdornment");box.Adornee=part;box.Size=Vector3.new(3,3,3);box.AlwaysOnTop=true;box.ZIndex=8;box.Transparency=0.5;box.Color3=data.color;box.Parent=folder
+				local billboard=Instance.new("BillboardGui");billboard.Adornee=part;billboard.Size=UDim2.new(0,260,0,30);billboard.StudsOffset=Vector3.new(0,5,0);billboard.AlwaysOnTop=true;billboard.Parent=folder
+				local text=Instance.new("TextLabel");text.BackgroundTransparency=1;text.Size=UDim2.fromScale(1,1);text.TextSize=14;text.TextColor3=data.color;text.TextStrokeTransparency=0;text.Text=data.name;text.Parent=billboard
+				entry={folder=folder,anchor=anchor};self.qolMarks[key]=entry;count+=1
+			end
+			if entry and entry.anchor then entry.anchor.Position=data.point end
+		end
+	end
+
+	function combat:ReserveAllows(item, reserve)
+		reserve = math.max(0, tonumber(reserve) or 0)
+		if reserve == 0 then return true end
+		local ok, items = pcall(function() return inventory:Fetch() end)
+		return ok and type(items)=="table" and (tonumber(items[item]) or 0)>reserve
+	end
+
+	function combat:CrowdCost(point, mobs)
+		if not cfg.rbc.avoidcrowds then return 0 end
+		local cost=0
+		for _, mob in ipairs(mobs) do
+			cost += math.max(0, 25-self:Flat(point-mob.position).Magnitude)*2
+		end
+		return cost
+	end
+
+	function combat:Retreat(options)
+		if not options.rbc or not cfg.rbc.lowhealthretreat then return false end
+		local humanoid=getHumanoid()
+		if humanoid.Health<=0 or not humanoid.MaxHealth or humanoid.MaxHealth<=0
+			or humanoid.Health/humanoid.MaxHealth*100>(cfg.rbc.retreathealth or 35) then return false end
+		local root=getRootPart().Position
+		if getFieldAt(root)~=currentField then return false end
+		local mobs=self:Mobs(currentField,root)
+		if #mobs==0 then return false end
+		local function clearance(point)
+			local minimum=math.huge
+			for _, mob in ipairs(mobs) do minimum=math.min(minimum,self:Flat(point-mob.position).Magnitude-mob.radius) end
+			return minimum
+		end
+		local best,score=nil,clearance(root)
+		for i=0,15 do
+			local angle=i*math.pi/8
+			local point=root+Vector3.new(math.cos(angle)*10,0,math.sin(angle)*10)
+			local distance=clearance(point)
+			if distance>score+0.25 and self:Safe(point,root,currentField,mobs,nil,options) then best,score=point,distance end
+		end
+		if not best then return false end
+		self.driving,self.lastUpdate,self.planned=nil,nil,nil
+		nextMoveTime=nil
+		self:SetIntent("Low-health retreat",best)
+		humanoid:MoveTo(best)
+		return true
+	end
+
+	function combat:SmartLink(options)
+		if not cfg.rbc.smartlinks then return nil end
+		local root=getRootPart().Position
+		local mobs=options.rbc and self:Mobs(currentField,root) or {}
+		local best,bestValue
+		for link in pairs(tracked.tokenlink or {}) do
+			local alive=type(link)=="table" or link.Parent
+			local point=alive and link.Position
+			if point and getFieldAt(point)==currentField and self:Flat(point-root).Magnitude<=25
+				and self:Safe(point,root,currentField,mobs,nil,options) then
+				local count=0
+				for token in pairs(tracked.tokens or {}) do
+					if token~=link and (type(token)=="table" or token.Parent) and token.Position
+						and getFieldAt(token.Position)==currentField and self:Flat(token.Position-point).Magnitude<=20 then count+=1 end
+				end
+				local value=count*5-self:Flat(point-root).Magnitude
+				if count>=3 and (not bestValue or value>bestValue) then best,bestValue=link,value end
+			end
+		end
+		return best
+	end
+
+	function combat:ShortHop(options, target)
+		if not cfg.rbc.shorthops or not target then return target end
+		local root=getRootPart().Position
+		local delta=self:Flat(target-root)
+		if delta.Magnitude<=14 then return target end
+		local point=root+delta.Unit*14
+		local mobs=options.rbc and self:Mobs(currentField,root) or {}
+		if self:Safe(point,root,currentField,mobs,nil,options) then return point end
+		return target
+	end
+
 	function combat:PetalTarget(options)
 		if not (cfg.autofarm.farmblooms or cfg.autofarm.farmpetals or options.petals) then return nil end
 		local now, root = os.clock(), getRootPart().Position
@@ -51981,7 +52304,7 @@ do
 			local expires = type(petal) == "table" and petal.ExpiresAt
 			if alive and point and getFieldAt(point) == currentField and (not expires or expires > now) then
 				local travel = self:Flat(point-root).Magnitude / math.max(1, getHumanoid().WalkSpeed)
-				if (not expires or travel < expires-now) and (not options.avoid or not isPathClear(point, options.avoid))
+				if (not expires or travel + (cfg.rbc.petalmargin or 0) < expires-now) and (not options.avoid or not isPathClear(point, options.avoid))
 					and (not options.range or not options.origin or self:Flat(point-options.origin).Magnitude <= options.range) then
 					local urgency = expires and expires-now-travel or travel+10
 					if not score or urgency < score then best, score = petal, urgency end
@@ -51996,6 +52319,11 @@ do
 		if not petal then return false end
 		local root = getRootPart().Position
 		local point = Vector3.new(petal.Position.X, root.Y, petal.Position.Z)
+		if self:Flat(root-point).Magnitude<3 then
+			local angle=os.clock()*3
+			local moving=point+Vector3.new(math.cos(angle)*1.8,0,math.sin(angle)*1.8)
+			if getFieldAt(moving)==currentField and (not options.avoid or not isPathClear(moving,options.avoid)) then point=moving end
+		end
 		self:SetIntent("Catching bloom petal", point, options)
 		getHumanoid():MoveTo(point)
 		-- The particle's removal/expiry owns completion; proximity is not proof of a catch.
@@ -52182,6 +52510,9 @@ do
 	end
 
 	function combat:Reset()
+		pcall(function() self:FaceRefresh(nil) end)
+		for _,entry in pairs(self.qolMarks or {}) do entry.folder:Destroy() end
+		self.qolMarks={}
 		self:Release()
 		self.sawParts, self.samples, self.mobSamples = {}, {}, {}
 		self.lastScan = -math.huge
@@ -52440,7 +52771,8 @@ do
 		local frame = gameGui.RBChallenge:FindFirstChild("MainFrame")
 		local label = frame and frame:FindFirstChild("RoundLabel")
 		local round = label and tonumber(string.match(label.Text, "%d+"))
-		if not cfg.rbc.closeenemies or (cfg.rbc.closeroundsonly and round ~= 10 and round ~= 20) then return fallback end
+		local closeActive = cfg.rbc.closeenemies and (not cfg.rbc.closeroundsonly or round==10 or round==20)
+		if not closeActive and not cfg.rbc.avoidcrowds then return fallback end
 		local root = getRootPart().Position
 		local mobs = self:Mobs(currentField, root)
 		if #mobs == 0 then return fallback end
@@ -52450,7 +52782,7 @@ do
 			if not options.loot and not options.skipoverlap and (cfg.autofarm.farmballoons2 or cfg.autofarm.farmmarks) and not questTasks:check(point) then return math.huge end
 			local nearest = math.huge
 			for _, mob in ipairs(mobs) do nearest = math.min(nearest, math.abs(self:Flat(point-mob.position).Magnitude - math.max(12, cfg.rbc.combatdistance or 12, mob.radius+4))) end
-			return nearest * 0.35 + self:Flat(point-root).Magnitude * 0.65
+			return (closeActive and nearest * 0.35 or 0) + self:Flat(point-root).Magnitude * 0.65 + self:CrowdCost(point,mobs)
 		end
 		local best, bestScore = fallback, score(fallback)
 		for i = 1, 4 do
@@ -52485,7 +52817,7 @@ do
 		if getFieldAt(destination) ~= field then return false end
 		if options.range and options.origin and self:Flat(destination - options.origin).Magnitude > options.range then return false end
 		for _, mob in ipairs(mobs) do
-			local radius = mob.radius + (mob == target and 0 or 3)
+			local radius = mob.radius + (mob == target and 0 or (cfg.rbc.enemyclearance or 3))
 			local predicted = cfg.rbc.improveddodging and mob.predicted or mob.position
 			predicted = predicted or mob.position
 			local startDistance = self:Flat(rootPos - mob.position).Magnitude
@@ -52623,6 +52955,10 @@ do
 
 	-- Clear drawings during conversion, round menus, death, disabling, and unload.
 	connections:Add("rbccombatvisuals", RunService.Heartbeat:Connect(function()
+		if cfg and (not combat.qolUpdated or os.clock()-combat.qolUpdated>0.5) then
+			combat.qolUpdated=os.clock()
+			combat:UpdateQOL()
+		end
 		if cfg and (not combat.themeUpdated or os.clock() - combat.themeUpdated > (cfg.rbc.rainbowui and 0.1 or 1)) then
 			combat.themeUpdated = os.clock()
 			combat:ApplyTheme()
@@ -52730,7 +53066,7 @@ do
 				if ((needBear and bear) or (needInspire and inspire)) and self:Alive(token, group) then
 					local point = Vector3.new(token.Position.X, getRootPart().Position.Y, token.Position.Z)
 					local range = (point - getRootPart().Position).Magnitude
-					if range / math.max(1, getHumanoid().WalkSpeed) + 0.75 < secondsLeft
+					if range <= (cfg.rbc.smileydetour or 55) and range / math.max(1, getHumanoid().WalkSpeed) + 0.75 < secondsLeft
 						and self:Safe(point, options) and (not distance or range < distance) then
 						best, distance = point, range
 					end
@@ -52816,14 +53152,15 @@ do
 		local signature = table.concat(progress, "|")
 		if signature ~= self.signature then self.signature, self.changed = signature, now end
 		if not cfg.rbc.enabled or not cfg.rbc.materialsenabled or not cfg.rbc.cloudvial or self.used then return false end
-		if not round or round < 1 or round > 25 or not currentField then return false end
+		if not round or round < (cfg.rbc.cloudminround or 1) or round > 25 or not currentField then return false end
 		if getFieldAt(getRootPart().Position) ~= currentField then return false end
 		local selected = cfg.rbc.cloudvialrounds and cfg.rbc.cloudvialrounds["Round " .. round]
-		local struggling = #progress > 0 and now - self.started >= 45 and now - (self.changed or now) >= 30
+		local struggling = #progress > 0 and now - self.started >= 45 and now - (self.changed or now) >= (cfg.rbc.cloudstalldelay or 30)
 		local mode = cfg.rbc.cloudvialmode or "Selected Rounds"
 		local shouldUse = (mode == "Selected Rounds" or mode == "Either") and selected
 			or (mode == "When Struggling" or mode == "Either") and struggling
 		if not shouldUse or (self.lastAttempt and now - self.lastAttempt < 10) then return false end
+		if not state.rbcCombat:ReserveAllows("Cloud Vial",cfg.rbc.cloudreserve) then return false end
 		self.lastAttempt = now
 		if inventory:Use("Cloud Vial", true) then
 			self.used = true
@@ -52835,6 +53172,7 @@ do
 end
 
 		farmStep = function(options)
+			if state.rbcCombat:Retreat(options) then return end
 			if state.rbcCombat:CollectPetal(options) then return end
 			if options.rbc and state.rbcCombat:RecoverMovement(options) then return end
 			options.smileyprep = state.smiley:Find(options)
@@ -52849,6 +53187,7 @@ end
 				local target = randomFieldPosition(options)
 				if options.rbc then target = state.rbcCombat:FarmDestination(options, target) end
 				if cfg.rbc.viewmovementtrail then target = state.rbcCombat:NextFarmPoint(options, target) end
+				target = state.rbcCombat:ShortHop(options,target)
 
 				if not target or not options.loot and not options.skipoverlap and not (not cfg.autofarm.farmballoons2 and not cfg.autofarm.farmmarks or questTasks:check(target)) then
 					nextMoveTime = os.clock() + 0.2
@@ -52983,6 +53322,7 @@ end
 				threads:Add("face", function()
 					while RunService.Heartbeat:Wait() do
 						if not cfg.autofarm.enabled or not (not state.stop and not state.stopface) then
+							state.rbcCombat:FaceRefresh(nil)
 							if not state.questgyro and state.gyro then
 								state.gyro:Destroy()
 								state.gyro = nil
@@ -53139,8 +53479,11 @@ end
 								local flame, hold = state.rbcCombat:FlamePlan(field)
 								if flame then faceTarget = {v=flame, flame=true, d=distanceTo(flame.Position,true)} end
 								state.stopdig = hold or nil
+								if flame then state.stopdig = not state.rbcCombat:FaceRefresh(flame) or nil else state.rbcCombat:FaceRefresh(nil) end
 							end
-							if cfg.face.method ~= "BodyGyro" then
+							if state.rbcCombat.refreshRotate~=nil then
+								-- Flame refresh already established the facing direction.
+							elseif cfg.face.method ~= "BodyGyro" then
 								if faceTarget then
 									if UserInputService.MouseIcon ~= "rbxasset://textures/MouseLockedCursor.png" then
 										input.prepareInput()
@@ -54738,7 +55081,7 @@ end
 
 						local lastUsed = cache.Materials[materialName]
 						local cooldown = rbcMaterial[5] and 10 or 29
-						if hasEligibleMob and (not lastUsed or os.time() - lastUsed > cooldown) then
+						if hasEligibleMob and state.rbcCombat:ReserveAllows("Stinger",cfg.rbc.stingerreserve) and (not lastUsed or os.time() - lastUsed > cooldown) then
 							if inventory:Use(materialName, true) then
 								logger.log("Using material:", materialName)
 								cache.Materials[materialName] = os.time()
@@ -63064,12 +63407,21 @@ do
 					end
 				end
 
-				if not (not upgradeSelectScreen.Visible or not cfg.rbc.cogupgrades and not cfg.rbc.upgradesenabled) then
+				if not (not upgradeSelectScreen.Visible or not cfg.rbc.cogupgrades and not cfg.rbc.upgradesenabled and not cfg.rbc.goodcogupgrades) then
 					local canRerollUpgrades = true
 
 					for _, child in ipairs(upgradeSelectScreen.ButtonFrame:GetChildren()) do
 						if not (not string.find(child.Name, "Button") or not child.Visible or not child.TextTitle.Visible) then
-							local pickUpgrade = cfg.rbc.cogupgrades and not child.FadeOut.Visible and findMatch(rbc.cogupgrades, child.TextTitle.Text)
+							local incomeUpgrade=findMatch(rbc.cogupgrades,child.TextTitle.Text)
+							local pickUpgrade = (cfg.rbc.cogupgrades or cfg.rbc.goodcogupgrades) and not child.FadeOut.Visible and incomeUpgrade
+							if cfg.rbc.goodcogupgrades and incomeUpgrade and child.FadeOut.Visible then
+								canRerollUpgrades=nil
+								local lockButton=upgradeSelectScreen.LockFrame:FindFirstChild("Button"..(tonumber(string.match(child.Name,"%d+")) or 1))
+								if lockButton and lockButton.ImageTransparency~=0 then
+									local deadline=os.clock()+1
+									while lockButton.Parent and lockButton.ImageTransparency~=0 and os.clock()<deadline do input:pressButton(lockButton,true,true);RunService.Heartbeat:Wait() end
+								end
+							end
 
 							if not pickUpgrade and not (not cfg.rbc.upgradesenabled or not cfg.rbc.upgrades) then
 								local roundNumber = tonumber(string.match(box.TitleBar.Title.Text, "%d+"))
@@ -63524,6 +63876,8 @@ do
 								reportStatus(1, v140.Field)
 								setField(v140.Field)
 								goToField()
+								state.rbcCombat:AutoGlitter(currentRound,pollenTasks)
+								state.rbcCombat:AutoGlitter(currentRound,gooTasks)
 
 								if not (v140.Field ~= "Mountain Top Field" or not tracked.mondo) then
 									killMondo(true, true)
@@ -67961,10 +68315,23 @@ which bees and get all 3 targets if
 				local rbcUpgradeFolder = controls.rbc.AddFolder("Upgrade Settings", true)
 				local rbcEquipmentFolder = controls.rbc.AddFolder("Equipment Settings", true)
 				local rbcAmuletFolder = controls.rbc.AddFolder("Amulet Settings", true)
+				local smart = controls.rbc.AddFolder("Smart Farming and RBC", true)
+				smart.AddSwitch("Low Health Retreat", nil, "rbc", "lowhealthretreat", {Tooltip="During RBC, favor safe escape steps when health falls below the threshold. Returns to farming if no safe escape exists."})
+				smart.AddSlider("Retreat Below Health (%)", nil, 10, 80, "rbc", "retreathealth", {Left=true})
+				smart.AddSwitch("Avoid Crowded Farming Routes", nil, "rbc", "avoidcrowds", {Tooltip="Penalize farming destinations near clusters of RBC enemies. Normal token collection keeps priority."})
+				smart.AddSlider("Extra Enemy Clearance (studs)", nil, 0, 12, "rbc", "enemyclearance", {Left=true})
+				smart.AddSwitch("Smart Token Links", nil, "rbc", "smartlinks", {Tooltip="Prefer a safe nearby Token Link when at least three other tokens are nearby. Also works outside RBC."})
+				smart.AddSwitch("Short Farming Hops", nil, "rbc", "shorthops", {Tooltip="Limit ordinary flower-farming steps to 14 studs so new targets can be reconsidered sooner. Token targets keep their destinations."})
+				smart.AddSlider("Petal Arrival Margin (seconds)", nil, 0, 2, "rbc", "petalmargin", {Left=true,Decimal=true,Tooltip="Only chase a timed petal if estimated travel leaves this much time to catch it. Zero preserves current behavior."})
+				smart.AddSlider("Smiley Buff Detour Limit (studs)", nil, 5, 55, "rbc", "smileydetour", {Left=true,Tooltip="Limit buff-token detours during Better Lineups. The five-second deadline still applies."})
+				smart.AddSlider("Stinger Reserve", nil, 0, 500, "rbc", "stingerreserve", {Left=true,Tooltip="RBC automatic stingers will not spend below this inventory count."})
+				smart.AddSlider("Cloud Vial Reserve", nil, 0, 50, "rbc", "cloudreserve", {Left=true,Tooltip="The one-vial-per-round controller keeps this many vials in inventory."})
+				smart.AddSlider("Cloud Vial Minimum Round", nil, 1, 25, "rbc", "cloudminround", {Left=true})
+				smart.AddSlider("Cloud Vial Stall Delay (seconds)", nil, 10, 90, "rbc", "cloudstalldelay", {Left=true,Tooltip="For When Struggling/Either mode. Requires unchanged pollen/goo progress for this duration and at least 45s elapsed in the round."})
 				local combatFolder = controls.rbc.AddFolder("Combat Tracking", true)
 				combatFolder.AddSwitch("Better Refresh Flames", function(enabled)
 					watchFlames(enabled); setFacing(enabled)
-					if enabled then state.rbcCombat:EnsureFX() else state.stopdig=nil end
+					if enabled then state.rbcCombat:EnsureFX() else state.stopdig=nil;state.rbcCombat:FaceRefresh(nil) end
 				end, "rbc", "betterrefreshflames", { Tooltip = "Dark Scythe: with Scorching Star, aim at flames with at most 1.25s left; otherwise wait 1s before refreshing. Uses existing auto-dig." })
 				combatFolder.AddSlider("Trail Color Hue", nil, 0, 360, "rbc", "trailhue", { Left = true })
 				combatFolder.AddSlider("Entire UI Color Hue", function() state.rbcCombat:ApplyTheme() end, 0, 360, "rbc", "uihue", { Left = true })
@@ -68055,7 +68422,7 @@ more accurate dodging]],
 				local cloudRounds = {}
 				for round = 1, 25 do table.insert(cloudRounds, "Round " .. round) end
 				cloudFolder.AddDropdown("Cloud Vial Rounds", cloudRounds, nil, nil, "rbc", "cloudvialrounds", { Multiple = true })
-				cloudFolder.AddLabel("Struggling: no pollen/goo progress for 30s after 45s in the round.")
+				cloudFolder.AddLabel("Struggling: no pollen/goo progress for the configured stall delay, after 45s in the round.")
 
 				rbcFolder.AddModal("Configure Materials", {
 					"Gumdrops",
@@ -68085,6 +68452,7 @@ more accurate dodging]],
 				rbcQuestFolder.AddSwitch("Reroll If Hive Color Not Met", nil, "rbc", "rerollquests")
 				rbcQuestFolder.AddSlider("Minimum Round For Reroll", nil, 4, 25, "rbc", "rerollmin", { Left = true })
 				rbcQuestFolder.Toggle(true, true)
+				rbcUpgradeFolder.AddSwitch("Good Auto Buy Cog Upgrades", nil, "rbc", "goodcogupgrades", {Tooltip="Buy offered cog-income upgrades and lock unaffordable ones until they can be purchased. Prevents rerolls while saving a desired offer."})
 				rbcUpgradeFolder.AddSwitch("Buy Cog Upgrades", nil, "rbc", "cogupgrades")
 				controls["Auto Buy Upgrades"] = rbcUpgradeFolder.AddSwitch("Auto Buy Upgrades", nil, "rbc", "upgradesenabled")
 				rbcUpgradeFolder.AddSwitch("Reroll After Buying", nil, "rbc", "rerollupgrades")
@@ -68363,6 +68731,7 @@ more accurate dodging]],
 					end
 				end, "webhook", "questdone2", { Hook = true })
 
+				webhookFolder.AddSwitch("RBC GRAPH", nil, "webhook", "rbcgraph", {Tooltip="Attach a locally rendered PNG of rare materials gained/used per active RBC hour. No treats or royal jelly."})
 				webhookFolder.AddSwitch("Send Digital Bee Drives", nil, "webhook", "drives")
 				webhookFolder.AddSwitch("Send Dapper Bear Shop", nil, "webhook", "dappershop")
 				webhookFolder.AddSwitch("Send Disconnect", nil, "webhook", "disconnect")
@@ -68765,6 +69134,17 @@ more accurate dodging]],
 			end
 
 			do
+				local qol = controls.qol.AddFolder("Visibility and Alerts", true)
+				qol.AddSwitch("Highlight Rare Item Tokens", nil, "rbc", "qolrares")
+				qol.AddSwitch("Legendary / Mythic Puffshroom Alerts", nil, "rbc", "qolpuffalerts", {Tooltip="Shows the rarity and field once per puffshroom."})
+				qol.AddSwitch("Highlight Rare Puffshrooms Through Walls", nil, "rbc", "qolpuffhighlight")
+				qol.AddLabel("Rare token labels and puffshrooms remain visible through walls.")
+				local glitter = controls.rbcboosts.AddFolder("Off-Color Quest Glitter", true)
+				glitter.AddSwitch("Auto Glitter", nil, "rbc", "autoglitter", {Tooltip="Use Glitter in selected fields/rounds for unfinished pollen or goo quests of a different color than your hive. Respects the shared 15-minute Glitter timer."})
+				glitter.AddDropdown("Your Hive Color", {"Blue","Red","White"}, nil, nil, "rbc", "glitterhivecolor")
+				glitter.AddDropdown("Allowed Fields", availableFields, true, nil, "rbc", "glitterfields", {Multiple=true,Field=true})
+				local rounds={};for i=1,25 do table.insert(rounds,"Round "..i) end
+				glitter.AddDropdown("Allowed Rounds", rounds, nil, nil, "rbc", "glitterrounds", {Multiple=true})
 				local debug_ = controls.debug
 				local Debug = debug_.AddFolder("Debug")
 				local appearance = debug_.AddFolder("GUI Colors and Outlines", true)
