@@ -44,6 +44,7 @@ do
 	end)
 end
 
+if _G.AtlasByBlubFlush then pcall(_G.AtlasByBlubFlush) end
 if _G.loading then return end
 _G.loading = true
 if not getthreadidentity or getthreadidentity()<8 then return(cloneref and cloneref(game:GetService("StarterGui")) or game:GetService("StarterGui")):SetCore("SendNotification",{Title="Warning",Text="Your executor is not supported.",Duration=10})end
@@ -689,6 +690,8 @@ local cfg = {
 		qolpuffalerts = false,
 		qolpuffhighlight = false,
 		autoglitter = false,
+		glittertrigger = "Either",
+		glitterstall = 30,
 		glitterhivecolor = "Blue",
 		glitterfields = false,
 		glitterrounds = false,
@@ -1345,24 +1348,101 @@ end
 local mergeTable
 
 mergeTable = function(target, source)
-	for k, value in pairs(target) do
-		if type(value) ~= "table" or type(source[k]) ~= "table" then
-			if source[k] ~= nil then
-				target[k] = source[k]
-			end
-		elseif next(source[k]) ~= nil then
-			mergeTable(value, source[k])
-		end
+	if type(source)~="table" then return target end
+	for key,value in pairs(source) do
+		if type(value)=="table" then
+			if type(target[key])~="table" or next(value)==nil then target[key]={} end
+			mergeTable(target[key],value)
+		else target[key]=value end
 	end
+	return target
 end
 
-local function saveConfig(cacheOnly)
-	if not cacheOnly then
-		writefile("atlas/" .. state.config .. ".json", HttpService:JSONEncode(cfg))
-	else
-		writefile("atlascache-" .. localPlayer.Name .. ".json", HttpService:JSONEncode(cache))
-	end
+local configStore={ready=false,lastError=-math.huge}
+function configStore:Clone(value)
+	if type(value)~="table" then return value end
+	local result={};for key,item in pairs(value) do result[key]=self:Clone(item) end
+	return result
 end
+function configStore:Read(path)
+	for _,candidate in ipairs({path,path..".bak"}) do
+		local ok,result=pcall(function() return HttpService:JSONDecode(readfile(candidate)) end)
+		if ok and type(result)=="table" then
+			local valid=true
+			for key,value in pairs(result) do
+				if type(key)~="string" or (type(cfg[key])=="table" and type(value)~="table") then valid=false;break end
+			end
+			if valid then return result end
+		end
+	end
+	local memory=_G.AtlasByBlubConfig
+	if memory and memory.path==path then return self:Clone(memory.value) end
+	return nil
+end
+function configStore:Write(path,value)
+	local encoded=HttpService:JSONEncode(value)
+	_G.AtlasByBlubConfig={path=path,value=self:Clone(value)}
+	if not isfolder("atlas") then makefolder("atlas") end
+	-- A verified backup is written first, so an interrupted main write is recoverable.
+	writefile(path..".bak",encoded)
+	assert(readfile(path..".bak")==encoded,"Config backup verification failed")
+	writefile(path,encoded)
+	assert(readfile(path)==encoded,"Config write verification failed")
+	self.lastEncoded=encoded
+	return true
+end
+function configStore:OverlayCustom(target)
+	for group,keys in pairs(self.customKeys) do
+		if type(target[group])~="table" then target[group]={} end
+		for _,key in ipairs(keys) do
+			if cfg[group] and cfg[group][key]~=nil then target[group][key]=self:Clone(cfg[group][key]) end
+		end
+	end
+	return target
+end
+function configStore:Export(value)
+	local result=self:OverlayCustom(self:Clone(value))
+	result.webhook=type(result.webhook)=="table" and result.webhook or {}
+	for _,key in ipairs({"url","graphurl","key","disconnectid"}) do result.webhook[key]=nil end
+	return result
+end
+function configStore:Import(value)
+	assert(type(value)=="table","Config must be a JSON object")
+	for key,item in pairs(value) do
+		assert(type(key)=="string","Config must be a JSON object")
+		if type(cfg[key])=="table" then assert(type(item)=="table","Invalid config section: "..key) end
+	end
+	local result=self:Clone(cfg)
+	mergeTable(result,value)
+	self:OverlayCustom(result)
+	result.webhook=result.webhook or {}
+	for _,key in ipairs({"url","graphurl","key","disconnectid"}) do result.webhook[key]=cfg.webhook[key] end
+	return result
+end
+configStore.customKeys={
+	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
+	planters={"optimize"},
+	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
+	webhook={"rbcgraph"},
+}
+local function saveConfig(cacheOnly)
+	if not cfg or not state then return false end
+	if not cacheOnly and (not configStore.ready or not state.config) then return false end
+	local ok,err=pcall(function()
+		if cacheOnly then
+			writefile("atlascache-"..localPlayer.Name..".json",HttpService:JSONEncode(cache))
+		else
+			configStore:Write("atlas/"..state.config..".json",cfg)
+			writefile("atlas-"..localPlayer.Name..".json",state.config..".json")
+		end
+	end)
+	if not ok and os.clock()-configStore.lastError>10 then
+		configStore.lastError=os.clock()
+		warn("atlas by blub: settings could not be saved: "..tostring(err))
+	end
+	return ok
+end
+_G.AtlasByBlubFlush=function() return saveConfig() end
 
 local function waitForLanding()
 	local now = os.clock()
@@ -52138,6 +52218,7 @@ local qolIcons = {
 	end
 
 	function combat:AutoGlitter(round, tasks)
+		if type(tasks)~="table" then return false end
 		if not cfg.rbc.autoglitter or not cfg.rbc.enabled or not gameGui.RBChallenge.Visible or gameGui.RBChallenge.Position.X.Scale>0.9 then return false end
 		local field=getFieldAt(getRootPart().Position)
 		if not field or not cfg.rbc.glitterfields or not cfg.rbc.glitterfields[field.Name]
@@ -52152,7 +52233,23 @@ local qolIcons = {
 			if color and color~=(cfg.rbc.glitterhivecolor or cfg.rbc.preset)
 				and (not quest.Field or quest.Field==field.Name) and not string.find(quest.Text.Text,"Complete",1,true) then mismatch=true;break end
 		end
-		if not mismatch then return false end
+		local nowClock=os.clock()
+		self.glitterProgress=self.glitterProgress or setmetatable({}, {__mode="k"})
+		local progress={}
+		for _,quest in ipairs(tasks or {}) do
+			if (not quest.Field or quest.Field==field.Name) and not string.find(quest.Text.Text,"Complete",1,true) then table.insert(progress,quest.Text.Text) end
+		end
+		table.sort(progress)
+		local signature=table.concat(progress,"|")
+		local record=self.glitterProgress[tasks]
+		if not record or record.round~=round or record.field~=field.Name then
+			record={round=round,field=field.Name,started=nowClock,changed=nowClock,signature=signature};self.glitterProgress[tasks]=record
+		elseif record.signature~=signature then record.signature=signature;record.changed=nowClock end
+		local struggling=#progress>0 and nowClock-record.started>=45 and nowClock-record.changed>=(cfg.rbc.glitterstall or 30)
+		local trigger=cfg.rbc.glittertrigger or "Either"
+		local shouldUse=(trigger=="Off-color quests" or trigger=="Either") and mismatch
+			or (trigger=="When struggling" or trigger=="Either") and struggling
+		if not shouldUse then return false end
 		local now=os.time();local previous=cache.Materials.glitter
 		if previous and now-previous.time<905 then return false end
 		if self.glitterAttempt and os.clock()-self.glitterAttempt<15 then return false end
@@ -66109,37 +66206,15 @@ end
 
 writefile("atlas/default.json", HttpService:JSONEncode(cfg))
 
-if isfile("atlas-" .. localPlayer.Name .. ".json") then
-	local lastConfigName = readfile("atlas-" .. localPlayer.Name .. ".json")
-
-	if isfile("atlas/" .. lastConfigName) then
-		local ok, result = pcall(HttpService.JSONDecode, HttpService, readfile("atlas/" .. lastConfigName))
-
-		if not ok then
-			warn(result)
-			ui.Notify("Config Error", "Failed to load config")
-		else
-			state.config = string.gsub(lastConfigName, ".json", "")
-			mergeTable(cfg, result)
-		end
-	end
-end
-
-if not state.config then
-	state.config = "Preset 1"
-
-	if not isfile("atlas/Preset 1.json") then
-		saveConfig()
-	else
-		local ok, result = pcall(HttpService.JSONDecode, HttpService, readfile("atlas/Preset 1.json"))
-
-		if not ok then
-			warn(result)
-			ui.Notify("Config Error", "Failed to load config")
-		else
-			mergeTable(cfg, result)
-		end
-	end
+do
+	local requested=_G.AtlasByBlubRequestedConfig
+	_G.AtlasByBlubRequestedConfig=nil
+	local ok,pointer=pcall(readfile,"atlas-"..localPlayer.Name..".json")
+	local filename=requested or (ok and pointer) or "Preset 1.json"
+	if type(filename)~="string" or filename:find("[/\\:]") or not filename:match("%.json$") then filename="Preset 1.json" end
+	state.config=filename:gsub("%.json$","")
+	local loaded=configStore:Read("atlas/"..filename)
+	if loaded then mergeTable(cfg,loaded) end
 end
 
 if isfile("atlascache-" .. localPlayer.Name .. ".json") then
@@ -68976,7 +69051,7 @@ more accurate dodging]],
 				for _, configPath in ipairs(listfiles("atlas")) do
 					local normalizedPath = string.gsub(configPath, "\\", "/")
 
-					if not (normalizedPath == "atlas/default.json" or normalizedPath == "atlas/default.json" or not string.find(normalizedPath, ".json")) then
+					if not (normalizedPath == "atlas/default.json" or normalizedPath == "atlas/default.json" or not string.match(normalizedPath, "%.json$")) then
 						local add = configDropdown.Add
 						local configName = string.gsub(string.gsub(normalizedPath, "atlas/", ""), ".json", "")
 						add(configName)
@@ -69017,19 +69092,18 @@ more accurate dodging]],
 				end, nil, nil, { Clear = true, Size = 200 })
 
 				Settings.AddButton("Export Config To Clipboard", function()
-					if not isfile("atlas/" .. config2 .. ".json") then
+					if config2==state.config then saveConfig() end
+					if config2~=state.config and not isfile("atlas/" .. config2 .. ".json") and not isfile("atlas/" .. config2 .. ".json.bak") then
 						ui.Notify("Config", "Config not found")
 					else
-						local ok, result = pcall(HttpService.JSONDecode, HttpService, readfile("atlas/" .. config2 .. ".json"))
+						local result = config2==state.config and configStore:Clone(cfg) or configStore:Read("atlas/" .. config2 .. ".json")
+						local ok = result~=nil
 
 						if not ok then
 							warn(result)
 							ui.Notify("Config Error", "Failed to load config")
 						else
-							result.webhook = {}
-							result.detected = {}
-							result.toys.stackselect = false
-							result.toys.discardselect = false
+							result=configStore:Export(result)
 							setclipboard(HttpService:JSONEncode(result))
 							ui.Notify("Config", "Exported config " .. config2 .. " to clipboard")
 						end
@@ -69058,9 +69132,9 @@ more accurate dodging]],
 					if not isfile("atlas/" .. config2 .. ".json") then
 						ui.Notify("Config", "Config not found")
 					else
-						writefile("atlas-" .. localPlayer.Name .. ".json", config2 .. ".json")
-						task.wait(0.1)
-						loadstring(game:HttpGet(getUrl("script.lua")))()
+						saveConfig()
+						_G.AtlasByBlubRequestedConfig=config2..".json"
+						loadstring(game:HttpGet("https://raw.githubusercontent.com/blubbyton/blubatlas/main/blubbatlas"))()
 					end
 				end, 86)
 
@@ -69111,21 +69185,14 @@ more accurate dodging]],
 							end)
 						end
 
-						result.webhook = nil
-						result.detected = nil
-
-						if result.toys then
-							result.toys.stackselect = nil
-						end
-
-						if result.toys then
-							result.toys.discardselect = nil
-						end
+						local valid,merged=pcall(function() return configStore:Import(result) end)
+						if not valid then ui.Notify("Config Error",tostring(merged));return end
+						result=merged
 
 						local add = configDropdown.Add
 						local baseName = string.gsub(fileName, ".json", "")
 						add(baseName)
-						writefile("atlas/" .. fileName, HttpService:JSONEncode(result))
+						configStore:Write("atlas/" .. fileName,result)
 						ui.Notify("Config", "Imported config as " .. string.gsub(fileName, ".json", ""))
 					end
 				end, nil, nil, { Clear = true, Size = 200 })
@@ -69140,7 +69207,9 @@ more accurate dodging]],
 				qol.AddSwitch("Highlight Rare Puffshrooms Through Walls", nil, "rbc", "qolpuffhighlight")
 				qol.AddLabel("Rare token labels and puffshrooms remain visible through walls.")
 				local glitter = controls.rbcboosts.AddFolder("Off-Color Quest Glitter", true)
-				glitter.AddSwitch("Auto Glitter", nil, "rbc", "autoglitter", {Tooltip="Use Glitter in selected fields/rounds for unfinished pollen or goo quests of a different color than your hive. Respects the shared 15-minute Glitter timer."})
+				glitter.AddSwitch("Auto Glitter", nil, "rbc", "autoglitter", {Tooltip="Use Glitter in selected fields/rounds for off-color or struggling pollen/goo quests, using your selected trigger. Respects the shared 15-minute Glitter timer."})
+				glitter.AddDropdown("Glitter Trigger", {"Off-color quests","When struggling","Either"}, nil, nil, "rbc", "glittertrigger")
+				glitter.AddSlider("Glitter Stall Delay (seconds)", nil, 10, 90, "rbc", "glitterstall", {Left=true,Tooltip="After at least 45s in the field/round, use Glitter if selected quest progress stalls this long."})
 				glitter.AddDropdown("Your Hive Color", {"Blue","Red","White"}, nil, nil, "rbc", "glitterhivecolor")
 				glitter.AddDropdown("Allowed Fields", availableFields, true, nil, "rbc", "glitterfields", {Multiple=true,Field=true})
 				local rounds={};for i=1,25 do table.insert(rounds,"Round "..i) end
@@ -70124,6 +70193,15 @@ Are you sure you want to enable it?]])
 
 				detectedFolder.Toggle(true, true)
 			end
+			configStore.ready=true
+			saveConfig()
+			connections:Add("configautosave",RunService.Heartbeat:Connect(function()
+				if not cfg or not state or not configStore.ready then return end
+				if configStore.checked and os.clock()-configStore.checked<0.5 then return end
+				configStore.checked=os.clock()
+				local ok,encoded=pcall(HttpService.JSONEncode,HttpService,cfg)
+				if ok and encoded~=configStore.lastEncoded then saveConfig() end
+			end))
 
 			return
 		end
