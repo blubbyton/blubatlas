@@ -174,6 +174,13 @@ if identifyexecutor then
 end
 
 local cfg = {
+ progression={
+  ssa=false,prefercolor=false,color="Blue",keepblue=true,
+  giftedcounts={},ungiftedcounts={},giftedtype="Frosty",ungiftedtype="Frosty",giftedcount=1,ungiftedcount=4,
+  jellybudget=100,jellyreserve=100,selectedcell="",targettype="Frosty",targetstatus="Gifted",
+  autolevel=false,level=10,catchup=true,levelcolor=false,prioritytypes={},prioritylevels={},celllevels={},prioritytype="Vicious",prioritylevel=12,
+  treatbudget=10000,treatreserve=1000,cloud=false,cloudbudget=1,beans=false,beanbudget=1,vicious=false,
+ },
 	vars = {
 		walkspeedenabled = false,
 		walkspeed = 45,
@@ -1420,6 +1427,7 @@ function configStore:Import(value)
 	return result
 end
 configStore.customKeys={
+ progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious"},
 	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
 	planters={"optimize"},
 	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
@@ -5118,6 +5126,7 @@ do
 		rbc = ui.AddTab("RBC", "http://www.roblox.com/asset/?id=113324128574355", true),
 		webhook = ui.AddTab("Webhook", "rbxassetid://10723426722", true),
 		config = ui.AddTab("Config", "rbxassetid://10734950309", true),
+		progression = ui.AddTab("Progression", "rbxassetid://10709782845", true),
 		qol = ui.AddTab("QOL", "rbxassetid://10709782845", true),
 		rbcboosts = ui.AddTab("RBC Boosts", "rbxassetid://10709782845", true),
 		debug = ui.AddTab("Debug", "rbxassetid://10709782845", true),
@@ -5893,7 +5902,7 @@ do
 						P:Disconnect()
 					end
 				end
-			elseif n.Size.X == 10 and cfg.combat.killvicious then
+			elseif n.Size.X == 10 and (cfg.combat.killvicious or (state.hiveProgression and state.hiveProgression:WantsVicious())) then
 				tracked.avoid[n] = 8
 			end
 		elseif L == "AreaRing" and cfg.autofarm.farmmarks then
@@ -53269,6 +53278,7 @@ do
 end
 
 		farmStep = function(options)
+			if state.hiveProgression then state.hiveProgression:Materials() end
 			if state.rbcCombat:Retreat(options) then return end
 			if state.rbcCombat:CollectPetal(options) then return end
 			if options.rbc and state.rbcCombat:RecoverMovement(options) then return end
@@ -60502,7 +60512,7 @@ do
 				killMondo()
 			end
 
-			if combat.killvicious then
+			if combat.killvicious or (state.hiveProgression and state.hiveProgression:WantsVicious()) then
 				for _, v131 in ipairs({ "vicious", "giftedvicious" }) do
 					if v131 == "giftedvicious" or not cfg.combat.giftedvicious then
 						for k in pairs(tracked[v131]) do
@@ -65466,6 +65476,279 @@ do
 		end,
 	}
 
+-- Progression policy: no game actions in this block.
+do
+ local p={spentJelly=0,spentTreats=0,spentClouds=0,spentBeans=0}
+ state.hiveProgression=p
+ p.types={"Basic","Bomber","Brave","Bumble","Cool","Hasty","Looker","Rad","Rascal","Stubborn","Bubble","Bucko","Commander","Demo","Exhausted","Fire","Frosty","Honey","Rage","Riley","Shocked","Baby","Carpenter","Demon","Diamond","Lion","Music","Ninja","Shy","Buoyant","Fuzzy","Precise","Spicy","Tadpole","Vector","Bear","Cobalt","Crimson","Digital","Festive","Gummy","Photon","Puppy","Tabby","Vicious","Windy"}
+ p.mythics={Buoyant=true,Fuzzy=true,Precise=true,Spicy=true,Tadpole=true,Vector=true}
+ p.events={Bear=true,Cobalt=true,Crimson=true,Digital=true,Festive=true,Gummy=true,Photon=true,Puppy=true,Tabby=true,Vicious=true,Windy=true}
+ p.colors={Bumble="Blue",Cool="Blue",Bubble="Blue",Bucko="Blue",Frosty="Blue",Diamond="Blue",Ninja="Blue",Buoyant="Blue",Tadpole="Blue",Cobalt="Blue",Vicious="Blue",Rad="Red",Rascal="Red",Fire="Red",Rage="Red",Riley="Red",Demon="Red",Shy="Red",Precise="Red",Spicy="Red",Crimson="Red",Festive="Red"}
+ function p:Gifted(bee)
+  return bee and type(bee.Traits)=="table" and table.find(bee.Traits,"Gifted")~=nil
+ end
+ function p:Cells(honeycomb)
+  local result={}
+  for x=1,5 do for y=1,10 do
+   local bee=honeycomb and honeycomb["x"..x] and honeycomb["x"..x]["y"..y]
+   if type(bee)=="table" and type(bee.Type)=="string" then table.insert(result,{x=x,y=y,id=x..","..y,bee=bee}) end
+  end end
+  return result
+ end
+ function p:Counts(cells)
+  local gifted,normal={},{}
+  for _,cell in ipairs(cells) do local counts=self:Gifted(cell.bee) and gifted or normal;counts[cell.bee.Type]=(counts[cell.bee.Type] or 0)+1 end
+  return gifted,normal
+ end
+ function p:Quota(kind,gifted)
+  local c=cfg.progression
+  local configured=(gifted and c.giftedcounts or c.ungiftedcounts)[kind]
+  if configured~=nil then return math.clamp(tonumber(configured) or 0,0,50) end
+  if gifted then return 1 end
+  if c.prefercolor and c.color=="Blue" and c.keepblue and (kind=="Frosty" or kind=="Bubble") then return 4 end
+  if c.prefercolor and (self.colors[kind] or "White")==c.color then return 1 end
+  return 0
+ end
+ function p:Protected(bee)
+  return self.mythics[bee.Type] or self.events[bee.Type] or self:Gifted(bee)
+ end
+ function p:Replacement(cells)
+  local _,normal=self:Counts(cells)
+  for _,cell in ipairs(cells) do
+   if not self:Protected(cell.bee) and (normal[cell.bee.Type] or 0)>self:Quota(cell.bee.Type,false) then return cell end
+  end
+ end
+ function p:NeedsColor(cells)
+  local gifted,normal=self:Counts(cells)
+  for _,kind in ipairs(self.types) do
+   if not self.events[kind] and not self.mythics[kind] and (self.colors[kind] or "White")==cfg.progression.color then
+    if (gifted[kind] or 0)<self:Quota(kind,true) or (normal[kind] or 0)<self:Quota(kind,false) then return true end
+   end
+  end
+  return false
+ end
+ function p:LevelTarget(cell,cells)
+  local c=cfg.progression
+  local target=c.autolevel and c.level or 1
+  if c.catchup and self.newCells and self.newCells[cell.id] then
+   for _,other in ipairs(cells) do if other.id~=cell.id then target=math.max(target,other.bee.Lvl or 1) end end
+  end
+  if c.autolevel then target=math.max(target,tonumber(c.prioritylevels[cell.bee.Type]) or 1,tonumber(c.celllevels[cell.id]) or 1) end
+  return math.clamp(target,1,25)
+ end
+ function p:FeedCandidate(cells)
+  local best,score
+  for _,cell in ipairs(cells) do
+   local goal=self:LevelTarget(cell,cells)
+   if (cell.bee.Lvl or 1)<goal then
+    local priority=(cfg.progression.prioritytypes[cell.bee.Type] and 1000 or 0)+(cfg.progression.levelcolor and (self.colors[cell.bee.Type] or "White")==cfg.progression.color and 100 or 0)-(cell.bee.Lvl or 1)
+    if not score or priority>score then best,score=cell,priority end
+   end
+  end
+  return best
+ end
+end
+
+-- Progression runtime shares the normal farming scheduler, never a competing movement loop.
+do
+ local p=state.hiveProgression
+ function p:Status(message)
+  self.message=message
+  if self.statusLabel then self.statusLabel.Text=message end
+ end
+ function p:Observe()
+  local cells=self:Cells(gameApi:Cache("Honeycomb"))
+  cache.progressionAccounts=cache.progressionAccounts or {}
+  local key=tostring(localPlayer.UserId)
+  cache.progressionAccounts[key]=cache.progressionAccounts[key] or {gifted={},locked={}}
+  self.account=cache.progressionAccounts[key]
+  self.account.gifted=self.account.gifted or {}
+  local seen,changed={},false
+  self.newCells=self.account.catchup or self.newCells or {}
+  self.lastCells=self.lastCells or self.account.lastCells
+  for _,cell in ipairs(cells) do
+   seen[cell.id]=true
+   if self.lastCells and not self.lastCells[cell.id] then self.newCells[cell.id]=true;changed=true end
+   if self:Gifted(cell.bee) and not self.account.gifted[cell.bee.Type] then self.account.gifted[cell.bee.Type]=true;changed=true end
+  end
+  if self.lastCells then for id in pairs(self.lastCells) do if not seen[id] then changed=true;self.newCells[id]=nil end end else changed=true end
+  self.lastCells=seen;self.account.lastCells=seen;self.account.catchup=self.newCells
+  if changed then saveConfig(true) end
+  if self.giftedLabel then
+   local count=0;for _ in pairs(self.account.gifted) do count+=1 end
+   self.giftedLabel.Text="Gifted types observed on this account: "..count.." / 40"
+  end
+  return cells
+ end
+ function p:AtHive()
+  if not state.hive then self:Status("Claim a hive first");return false end
+  local pos=localPlayer.SpawnPos.Value.Position
+  if distanceTo(pos,true)>9 then goTo(pos,"Progression: Hive") end
+  return not state.stop and distanceTo(pos,true)<=9
+ end
+ function p:CellAction(cell,item,amount)
+  local stock=gameApi:Cache("Eggs") or {}
+  if (stock[item] or 0)<amount then self:Status("Not enough "..item);return false end
+  if item=="RoyalJelly" and (self.spentJelly>=cfg.progression.jellybudget or stock[item]<=cfg.progression.jellyreserve) then self:Status("Royal Jelly limit reached");return false end
+  if item=="Treat" and (amount>cfg.progression.treatbudget-self.spentTreats or amount>stock[item]-cfg.progression.treatreserve) then self:Status("Treat limit reached");return false end
+  if not self:AtHive() then return false end
+  local live=gameApi:Cache("Honeycomb")
+  local bee=live and live["x"..cell.x] and live["x"..cell.x]["y"..cell.y]
+  if item=="RoyalJelly" and (not bee or self:Protected(bee)) then self:Status("Protected bee: skipped");return false end
+  if item~="RoyalJelly" and item~="Treat" and bee then self:Status("Hatching requires an empty slot");return false end
+  if item=="Treat" and not bee then return false end
+  local eggs=gameApi:Cache("Eggs") or {}
+  if (eggs[item] or 0)<amount then self:Status("Not enough "..item);return false end
+  if item=="Treat" and (amount>cfg.progression.treatbudget-self.spentTreats or amount>eggs[item]-cfg.progression.treatreserve) then return false end
+  if item=="RoyalJelly" then
+   if self.spentJelly>=cfg.progression.jellybudget or eggs[item]<=cfg.progression.jellyreserve then self:Status("Royal Jelly limit reached");return false end
+   for _,setting in ipairs({"RollToLegendary","RollToMythic","RollToMutation","RollToGifted"}) do gameApi:Event("PlayerSettingsEvent",setting,false) end
+   self.spentJelly+=amount
+  elseif item=="Treat" then self.spentTreats+=amount end
+  local remaining,ok,honeycomb,discovered,eggUses=gameApi:Event("ConstructHiveCellFromEgg",cell.x,cell.y,item,amount,false)
+  if not ok then self:Status("Game rejected "..item.."; retry delayed");self.nextAction=os.clock()+10;return false end
+  gameApi:CacheSet({"Eggs",item},remaining)
+  if type(honeycomb)=="table" then gameApi:CacheSet("Honeycomb",honeycomb) end
+  if discovered then gameApi:CacheSet("DiscoveredBees",discovered) end
+  if eggUses then gameApi:CacheSet({"Totals","EggUses"},eggUses) end
+  self:Status(item.." used at "..cell.id)
+  self:Observe()
+  return true
+ end
+ function p:Feed(cell,cells)
+  local c=cfg.progression
+  local eggs=gameApi:Cache("Eggs") or {}
+  local remaining=math.min(c.treatbudget-self.spentTreats,(eggs.Treat or 0)-c.treatreserve)
+  local required=questData.bond[cell.bee.Lvl or 1]
+  if not required or remaining<1 then self:Status("Treat limit reached");return false end
+  local amount=math.min(10000,remaining,math.max(1,math.ceil((required-(cell.bee.Bond or 0))/10)))
+  return self:CellAction(cell,"Treat",math.floor(amount))
+ end
+ function p:Vicious(cells)
+  if not cfg.progression.vicious then return false end
+  for _,cell in ipairs(cells) do if cell.bee.Type=="Vicious" then self:Status("Vicious Bee is hatched");return false end end
+  local eggs=gameApi:Cache("Eggs") or {}
+  local a=self.account
+  if not a.viciousSlots then
+   a.viciousSlots={}
+   for _,cell in ipairs(state.hive.Cells:GetChildren()) do
+    local locked=cell:FindFirstChild("CellLocked")
+    if locked and locked.Value then a.viciousSlots[cell.Name]=true end
+   end
+   saveConfig(true)
+  end
+  if (eggs.ViciousBee or 0)>0 then
+   for name in pairs(a.viciousSlots) do
+    local model=state.hive.Cells:FindFirstChild(name)
+    local x,y=name:match("^C(%d+),(%d+)$");x,y=tonumber(x),tonumber(y)
+    local honeycomb=gameApi:Cache("Honeycomb") or {}
+    if model and x and y and not model.CellLocked.Value and not (honeycomb["x"..x] and honeycomb["x"..x]["y"..y]) then
+     return self:CellAction({x=x,y=y,id=x..","..y},"ViciousBee",1)
+    end
+   end
+   self:Status("Vicious egg ready: waiting for a newly bought empty slot");return false
+  end
+  if (eggs.Stinger or 0)<250 then self:Status("Vicious: "..(eggs.Stinger or 0).." / 250 stingers; enable farming to hunt");return false end
+  if os.clock()<(self.nextClaim or 0) then return false end
+  self.nextClaim=os.clock()+15
+  local toy=workspace.Toys:FindFirstChild("Vicious Bee Claimer")
+  if not toy or not toy:FindFirstChild("Platform") then self:Status("Vicious claimer unavailable");return false end
+  local text,status=secureCall(gameApi.ToysText,localPlayer,toy)
+  if not text or status=="Red" then self:Status("Vicious claim unavailable");return false end
+  goTo(toy.Platform.Position,"Vicious Bee Claimer")
+  if not state.stop and distanceTo(toy.Platform.Position,true)<12 then
+   if input:pressActivateButton() then secureCall(gameApi.Toys,localPlayer,toy);gameApi:CacheUpdate();return true end
+  end
+  return false
+ end
+ function p:WantsVicious()
+  if not cfg.progression.vicious then return false end
+  for _,cell in ipairs(self:Cells(gameApi:Cache("Honeycomb"))) do if cell.bee.Type=="Vicious" then return false end end
+  local eggs=gameApi:Cache("Eggs") or {}
+  return (eggs.ViciousBee or 0)==0 and (eggs.Stinger or 0)<250
+ end
+ function p:SSAReady()
+  local toys=workspace:FindFirstChild("Toys")
+  local toy=toys and toys:FindFirstChild("Supreme Star Amulet Generator")
+  if not toy then return false end
+  local ok,text,status=pcall(secureCall,gameApi.ToysText,localPlayer,toy)
+  return ok and text~=nil and status~=nil and status~="Red"
+ end
+ function p:Materials()
+  if state.stop or state.fasttween or self.busy or os.clock()<(self.nextMaterialCheck or 0) then return end
+  self.nextMaterialCheck=os.clock()+2
+  local root=getRootPart();if not root then return end
+  local field=getFieldAt(root.Position);if not field then return end
+  local c=cfg.progression
+  if c.cloud and self.spentClouds<c.cloudbudget and os.clock()>(self.nextCloud or 0) then
+   local folder=workspace:FindFirstChild("Clouds");local cloud=false
+   if folder then for _,obj in ipairs(folder:GetChildren()) do local plane=obj:FindFirstChild("Plane");if plane and getFieldAt(plane.Position)==field then cloud=true;break end end end
+   if not cloud and inventory:Use("Cloud Vial") then self.spentClouds+=1;self.nextCloud=os.clock()+180 end
+  end
+  if c.beans and self.spentBeans<c.beanbudget and os.clock()>(self.nextBeans or 0) and not buffs["Jelly Bean Sharing Bonus"] then
+   for _,player in ipairs(game:GetService("Players"):GetPlayers()) do
+    local other=player~=localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if other and getFieldAt(other.Position)==field and (other.Position-root.Position).Magnitude<50 then
+     if inventory:Use("Jelly Beans") then self.spentBeans+=1;self.nextBeans=os.clock()+300 end
+     break
+    end
+   end
+  end
+ end
+ function p:CollectTreasures()
+  self.treasureQueued=false
+  local folder=workspace:FindFirstChild("TreasureCollectibles")
+  if not folder then self:Status("Hidden treasure container unavailable");return end
+  local tokens={}
+  for _,token in ipairs(folder:GetChildren()) do if token:IsA("BasePart") and token.Transparency<1 then table.insert(tokens,token) end end
+  local visited=0
+  while #tokens>0 and not state.stop and not self.cancelTreasures do
+   local root=getRootPart();local hum=getHumanoid();if not root or not hum or hum.Health<=0 then break end
+   table.sort(tokens,function(a,b) return (a.Position-root.Position).Magnitude<(b.Position-root.Position).Magnitude end)
+   local token=table.remove(tokens,1)
+   if token.Parent and token.Transparency<1 then
+    stopMovement();state.fasttween=true
+    local duration=math.clamp((token.Position-root.Position).Magnitude/200,0.1,8)
+    self.tween=TweenService:Create(root,TweenInfo.new(duration,Enum.EasingStyle.Linear),{CFrame=CFrame.new(token.Position+Vector3.new(0,2,0))})
+    self.tween:Play()
+    local deadline=os.clock()+duration+0.3
+    repeat task.wait(0.05) until os.clock()>=deadline or state.stop or self.cancelTreasures or not token.Parent or hum.Health<=0
+    self.tween:Cancel();self.tween=nil;state.fasttween=nil
+    if not state.stop and not self.cancelTreasures then task.wait(0.3);visited+=1 end
+   end
+  end
+  self:Status("Hidden item route: visited "..visited.." available tokens")
+ end
+ function p:Step()
+  if self.busy or state.stop or state.fasttween or cfg.rbc.enabled or not state.hive or os.clock()<(self.nextAction or 0) then return end
+  for _,name in ipairs({"Auto Royal Jelly","Auto Gifted Basic","Auto Mutations","Auto Star Amulet","Auto Moon Amulet"}) do if threads:Get(name) then return end end
+  self.busy=true;self.nextAction=os.clock()+1
+  local ok,err=pcall(function()
+   local cells=self:Observe();local c=cfg.progression
+   if self.treasureQueued then self:CollectTreasures();return end
+   if self:Vicious(cells) then return end
+   local feeding=self:FeedCandidate(cells)
+   if feeding and self:Feed(feeding,cells) then return end
+   if self.editTarget then
+    local job=self.editTarget;local chosen
+    for _,cell in ipairs(cells) do if cell.id==job.id then chosen=cell;break end end
+    if not chosen then self.editTarget=nil;self:Status("Select an occupied bee to roll");return end
+    if chosen.bee.Type==job.kind and self:Gifted(chosen.bee)==job.gifted then self.editTarget=nil;self:Status("Target bee reached");return end
+    if self:Protected(chosen.bee) then self.editTarget=nil;self:Status("Stopped on protected gifted, mythic or event bee");return end
+    self:CellAction(chosen,"RoyalJelly",1);return
+   end
+   local observed=0;for _ in pairs(self.account.gifted) do observed+=1 end
+   if c.ssa and observed<40 and not self:SSAReady() or c.prefercolor and self:NeedsColor(cells) then
+    local cell=self:Replacement(cells)
+    if cell then self:CellAction(cell,"RoyalJelly",1) else self:Status("No unprotected surplus bee to replace") end
+   end
+  end)
+  if self.tween then self.tween:Cancel();self.tween=nil;state.fasttween=nil end
+  self.busy=false
+  if not ok then self.nextAction=os.clock()+10;self:Status("Progression paused: "..tostring(err));logger.warn(err) end
+ end
+end
+
 	local function v134()
 		if cfg.beesmas.roboparty then
 			doRoboParty()
@@ -66012,7 +66295,7 @@ do
 
 	autofarmLoop = function()
 		while RunService.Heartbeat:Wait() do
-			if not state.stop and not state.fasttween then
+			if not state.stop and not state.fasttween and not state.hiveProgression.busy then
 				if getHumanoid().Health == 0 then
 					localPlayer.CharacterAdded:Wait()
 					task.wait(1)
@@ -66023,6 +66306,7 @@ do
 				end
 
 				local n, O = pcall(function()
+					state.hiveProgression:Step()
 					if puffChase.findOverride() then
 						closePopups()
 						farmPuffshroom()
@@ -66048,6 +66332,7 @@ do
 end
 
 ScreenGui.Destroying:Connect(function()
+	if state and state.hiveProgression and state.hiveProgression.tween then state.hiveProgression.tween:Cancel() end
 	stopMovement()
 	if state and state.rbcCombat then state.rbcCombat:Reset() end
 	connections:CancelAll()
@@ -69201,6 +69486,82 @@ more accurate dodging]],
 			end
 
 			do
+do
+ local p=state.hiveProgression
+ local tab=controls.progression
+ local general=tab.AddFolder("SSA and Hive Color",true)
+ p.statusLabel=general.AddLabel("Progression ready")
+ p.giftedLabel=general.AddLabel("Gifted types observed: waiting for hive")
+ general.AddSwitch("Auto Progress Towards SSA",nil,"progression","ssa",{Tooltip="Rolls surplus ungifted bees one jelly at a time. Never replaces gifted, mythic or event bees. Royal Jelly alone cannot produce all 40 gifted types."})
+ general.AddLabel("All gifted, mythic and event bees are protected.")
+ general.AddSwitch("Auto Preferred Hive Color",nil,"progression","prefercolor")
+ general.AddDropdown("Early Game Hive Color",{"Blue","Red","White"},nil,nil,"progression","color")
+ general.AddSwitch("Keep Frosty and Bubble Bees",nil,"progression","keepblue",{Tooltip="Blue preset keeps four ungifted Frostys and four ungifted Bubbles unless you set custom counts. Gifted bees always stay protected."})
+ general.AddSlider("Royal Jelly Budget Per Execution",nil,0,10000,"progression","jellybudget",{Left=true})
+ general.AddSlider("Royal Jelly Reserve",nil,0,10000,"progression","jellyreserve",{Left=true})
+ local function countsFolder(title,key,selection,sliderkey,gifted)
+  local f=tab.AddFolder(title)
+  local slider
+  f.AddDropdown("Bee Type",p.types,nil,function(value)
+   if slider then slider.Set(p:Quota(value,gifted)) end
+  end,"progression",selection)
+  slider=f.AddSlider("Number To Keep",function(value)
+   cfg.progression[key][cfg.progression[selection]]=value
+  end,0,50,"progression",sliderkey,{Left=true})
+  f.AddLabel("0 allows replacement only when the bee is ungifted.")
+  f.AddLabel("Gifted quotas are goals; existing gifted bees stay protected.")
+ end
+ countsFolder("Gifted Bee Types Allowed","giftedcounts","giftedtype","giftedcount",true)
+ countsFolder("Ungifted Bee Types Allowed","ungiftedcounts","ungiftedtype","ungiftedcount",false)
+ local view=tab.AddFolder("View Hive",true)
+ view.AddBeeModal("View / Select Bee","progression","selectedcell")
+ view.AddLabel("Click a bee in the hive view to select its cell.")
+ view.AddDropdown("Target Bee Type",p.types,nil,nil,"progression","targettype")
+ view.AddDropdown("Target Status",{"Gifted","Ungifted"},nil,nil,"progression","targetstatus")
+ view.AddButton("Roll Selected Bee Toward Target",function()
+  local c=cfg.progression
+  if not c.selectedcell or c.selectedcell=="" then ui.Notify("Progression","Select a bee first");return end
+  if p.events[c.targettype] or c.targettype=="Basic" then ui.Notify("Progression","Royal Jelly cannot roll this type. Use its egg or the existing Gifted Basic tool.");return end
+  p.editTarget={id=c.selectedcell,kind=c.targettype,gifted=c.targetstatus=="Gifted"}
+  p:Status("Queued roll at "..c.selectedcell.."; protected results stop rolling")
+ end)
+ view.AddButton("Cancel Target Roll",function() p.editTarget=nil;p:Status("Target roll cancelled") end)
+ local levels=tab.AddFolder("Auto Level Up",true)
+ levels.AddSwitch("Auto Level Up",nil,"progression","autolevel")
+ levels.AddSlider("Preferred Hive Level",nil,1,25,"progression","level",{Left=true})
+ levels.AddSwitch("New Bees Catch Up To Hive",nil,"progression","catchup",{Tooltip="Newly occupied slots catch up to the highest existing bee level, within your treat budget."})
+ levels.AddSwitch("Level Preferred Color First",nil,"progression","levelcolor")
+ levels.AddDropdown("Priority Bee Types",p.types,nil,nil,"progression","prioritytypes",{Multiple=true})
+ levels.AddDropdown("Higher Level Bee Type",p.types,nil,nil,"progression","prioritytype")
+ levels.AddSlider("Higher Level Target",nil,1,25,"progression","prioritylevel",{Left=true})
+ levels.AddButton("Apply Higher Level To Type",function() cfg.progression.prioritylevels[cfg.progression.prioritytype]=cfg.progression.prioritylevel;saveConfig() end)
+ levels.AddButton("Apply Higher Level To Selected Cell",function()
+  if cfg.progression.selectedcell and cfg.progression.selectedcell~="" then cfg.progression.celllevels[cfg.progression.selectedcell]=cfg.progression.prioritylevel;saveConfig() end
+ end)
+ levels.AddButton("Clear Higher Level Overrides",function() cfg.progression.prioritylevels={};cfg.progression.celllevels={};saveConfig() end)
+ levels.AddSlider("Treat Budget Per Execution",nil,0,1000000,"progression","treatbudget",{Left=true})
+ levels.AddSlider("Treat Reserve",nil,0,1000000,"progression","treatreserve",{Left=true})
+ local items=tab.AddFolder("Hidden Items and Field Buffs",true)
+ items.AddButton("Collect Available Hidden Items",function() p.cancelTreasures=false;p.treasureQueued=true;p:Status("Hidden item route queued") end)
+ items.AddButton("Cancel Hidden Item Route",function() p.cancelTreasures=true;p.treasureQueued=false end)
+ items.AddSwitch("Auto Cloud Vial - No Clouds In Field",nil,"progression","cloud")
+ items.AddSlider("Cloud Vial Budget Per Execution",nil,0,100,"progression","cloudbudget",{Left=true})
+ items.AddSwitch("Auto Jellybean Sharing Buff",nil,"progression","beans",{Tooltip="Uses beans only with another player nearby in the same field. They still need to collect the beans to grant the sharing buff."})
+ items.AddSlider("Jellybean Budget Per Execution",nil,0,100,"progression","beanbudget",{Left=true})
+ local vicious=tab.AddFolder("Auto Vicious Bee",true)
+ vicious.AddSwitch("Auto Vicious Bee",nil,"progression","vicious")
+ vicious.AddLabel("Enable farming to hunt Vicious until 250 stingers.")
+ vicious.AddLabel("Claims its egg, then waits for a NEW purchased empty slot.")
+ vicious.AddLabel("No hive slots are purchased automatically by this option.")
+ p:Observe()
+ threads:Add("Progression Idle",function()
+  while task.wait(1) do
+   if not state or not cfg then break end
+   if not threads:Get("Autofarm") and not state.stop then p:Step();p:Materials() end
+  end
+ end)
+end
+
 				local qol = controls.qol.AddFolder("Visibility and Alerts", true)
 				qol.AddSwitch("Highlight Rare Item Tokens", nil, "rbc", "qolrares")
 				qol.AddSwitch("Legendary / Mythic Puffshroom Alerts", nil, "rbc", "qolpuffalerts", {Tooltip="Shows the rarity and field once per puffshroom."})
