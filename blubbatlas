@@ -180,6 +180,7 @@ local cfg = {
   jellybudget=100,jellyreserve=100,selectedcell="",targettype="Frosty",targetstatus="Gifted",
   autolevel=false,level=10,catchup=true,levelcolor=false,prioritytypes={},prioritylevels={},celllevels={},prioritytype="Vicious",prioritylevel=12,
   treatbudget=10000,treatreserve=1000,cloud=false,cloudbudget=1,beans=false,beanbudget=1,vicious=false,
+  giftedselection={},ungiftedselection={},priorityselection={},viciousmin=1,viciousmax=12,stopviciousafterbuy=true,
  },
 	vars = {
 		walkspeedenabled = false,
@@ -1427,7 +1428,7 @@ function configStore:Import(value)
 	return result
 end
 configStore.customKeys={
- progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious"},
+ progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious","giftedselection","ungiftedselection","priorityselection","viciousmin","viciousmax","stopviciousafterbuy"},
 	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
 	planters={"optimize"},
 	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
@@ -5902,7 +5903,7 @@ do
 						P:Disconnect()
 					end
 				end
-			elseif n.Size.X == 10 and (cfg.combat.killvicious or (state.hiveProgression and state.hiveProgression:WantsVicious())) then
+			elseif n.Size.X == 10 and (state.hiveProgression and state.hiveProgression:ShouldHuntVicious() or not state.hiveProgression and cfg.combat.killvicious) then
 				tracked.avoid[n] = 8
 			end
 		elseif L == "AreaRing" and cfg.autofarm.farmmarks then
@@ -60512,13 +60513,13 @@ do
 				killMondo()
 			end
 
-			if combat.killvicious or (state.hiveProgression and state.hiveProgression:WantsVicious()) then
+			if state.hiveProgression:ShouldHuntVicious() then
 				for _, v131 in ipairs({ "vicious", "giftedvicious" }) do
 					if v131 == "giftedvicious" or not cfg.combat.giftedvicious then
 						for k in pairs(tracked[v131]) do
 							local v132 = tonumber(string.match(k.Name, "%d+"))
 							local HumanoidRootPart = k:FindFirstChild("HumanoidRootPart")
-							if not HumanoidRootPart or not v132 or not (not not (cfg.combat.viciousmin <= v132) and not not (v132 <= cfg.combat.viciousmax)) then
+							if not HumanoidRootPart or not v132 or not state.hiveProgression:ViciousLevelAllowed(v132) then
 								continue
 							end
 							local WaitingThorn = workspace.Particles.WTs:FindFirstChild("WaitingThorn")
@@ -65484,6 +65485,21 @@ do
  p.mythics={Buoyant=true,Fuzzy=true,Precise=true,Spicy=true,Tadpole=true,Vector=true}
  p.events={Bear=true,Cobalt=true,Crimson=true,Digital=true,Festive=true,Gummy=true,Photon=true,Puppy=true,Tabby=true,Vicious=true,Windy=true}
  p.colors={Bumble="Blue",Cool="Blue",Bubble="Blue",Bucko="Blue",Frosty="Blue",Diamond="Blue",Ninja="Blue",Buoyant="Blue",Tadpole="Blue",Cobalt="Blue",Vicious="Blue",Rad="Red",Rascal="Red",Fire="Red",Rage="Red",Riley="Red",Demon="Red",Shy="Red",Precise="Red",Spicy="Red",Crimson="Red",Festive="Red"}
+ function p:ApplySelectedCounts(key,selection,value)
+  local count=0
+  for kind,selected in pairs(selection or {}) do
+   if selected and table.find(self.types,kind) then
+    cfg.progression[key][kind]=math.clamp(math.floor(tonumber(value) or 0),0,key=="prioritylevels" and 25 or 50)
+    count+=1
+   end
+  end
+  return count
+ end
+ function p:ViciousLevelAllowed(level)
+  local c=cfg.progression.vicious and cfg.progression or cfg.combat
+  local low,high=tonumber(c.viciousmin) or 1,tonumber(c.viciousmax) or 12
+  return type(level)=="number" and level>=math.min(low,high) and level<=math.max(low,high)
+ end
  function p:Gifted(bee)
   return bee and type(bee.Traits)=="table" and table.find(bee.Traits,"Gifted")~=nil
  end
@@ -65564,10 +65580,13 @@ do
   self.account=cache.progressionAccounts[key]
   self.account.gifted=self.account.gifted or {}
   local seen,changed={},false
+  local eggs=gameApi:Cache("Eggs") or {}
+  if (eggs.ViciousBee or 0)>0 and not self.account.viciousPurchased then self.account.viciousPurchased=true;changed=true end
   self.newCells=self.account.catchup or self.newCells or {}
   self.lastCells=self.lastCells or self.account.lastCells
   for _,cell in ipairs(cells) do
    seen[cell.id]=true
+   if cell.bee.Type=="Vicious" and not self.account.viciousPurchased then self.account.viciousPurchased=true;changed=true end
    if self.lastCells and not self.lastCells[cell.id] then self.newCells[cell.id]=true;changed=true end
    if self:Gifted(cell.bee) and not self.account.gifted[cell.bee.Type] then self.account.gifted[cell.bee.Type]=true;changed=true end
   end
@@ -65663,9 +65682,16 @@ do
  end
  function p:WantsVicious()
   if not cfg.progression.vicious then return false end
-  for _,cell in ipairs(self:Cells(gameApi:Cache("Honeycomb"))) do if cell.bee.Type=="Vicious" then return false end end
   local eggs=gameApi:Cache("Eggs") or {}
-  return (eggs.ViciousBee or 0)==0 and (eggs.Stinger or 0)<250
+  local owned=(eggs.ViciousBee or 0)>0 or self.account and self.account.viciousPurchased
+  for _,cell in ipairs(self:Cells(gameApi:Cache("Honeycomb"))) do if cell.bee.Type=="Vicious" then owned=true;break end end
+  if owned then return not cfg.progression.stopviciousafterbuy end
+  return (eggs.Stinger or 0)<250
+ end
+ function p:ShouldHuntVicious()
+  -- Progression's stop policy also overrides the older combat hunting toggle.
+  if cfg.progression.vicious then return self:WantsVicious() end
+  return cfg.combat.killvicious
  end
  function p:SSAReady()
   local toys=workspace:FindFirstChild("Toys")
@@ -69501,18 +69527,23 @@ do
  general.AddSlider("Royal Jelly Reserve",nil,0,10000,"progression","jellyreserve",{Left=true})
  local function countsFolder(title,key,selection,sliderkey,gifted)
   local f=tab.AddFolder(title)
-  local slider
-  f.AddDropdown("Bee Type",p.types,nil,function(value)
-   if slider then slider.Set(p:Quota(value,gifted)) end
-  end,"progression",selection)
-  slider=f.AddSlider("Number To Keep",function(value)
-   cfg.progression[key][cfg.progression[selection]]=value
-  end,0,50,"progression",sliderkey,{Left=true})
+  f.AddDropdown("Bee Types To Keep",p.types,nil,nil,"progression",selection,{Multiple=true})
+  f.AddSlider("Number To Keep Of EACH Selected Type",nil,0,50,"progression",sliderkey,{Left=true})
+  f.AddButton("Apply Count To Selected Bees",function()
+   local count=p:ApplySelectedCounts(key,cfg.progression[selection],cfg.progression[sliderkey])
+   saveConfig();ui.Notify("Progression",count>0 and ("Saved keep counts for "..count.." bee types") or "Select at least one bee type")
+  end)
+  f.AddButton("View Saved Keep Counts",function()
+   local rows={};for _,kind in ipairs(p.types) do if cfg.progression[key][kind]~=nil then table.insert(rows,kind..": "..cfg.progression[key][kind]) end end
+   ui.Notify(title,#rows>0 and table.concat(rows,", ") or "Using default keep counts")
+  end)
+  f.AddLabel("Select multiple types, set a count, then Apply.")
+  f.AddLabel("Other saved bee counts stay unchanged.")
   f.AddLabel("0 allows replacement only when the bee is ungifted.")
   f.AddLabel("Gifted quotas are goals; existing gifted bees stay protected.")
  end
- countsFolder("Gifted Bee Types Allowed","giftedcounts","giftedtype","giftedcount",true)
- countsFolder("Ungifted Bee Types Allowed","ungiftedcounts","ungiftedtype","ungiftedcount",false)
+ countsFolder("Gifted Bee Types Allowed","giftedcounts","giftedselection","giftedcount",true)
+ countsFolder("Ungifted Bee Types Allowed","ungiftedcounts","ungiftedselection","ungiftedcount",false)
  local view=tab.AddFolder("View Hive",true)
  view.AddBeeModal("View / Select Bee","progression","selectedcell")
  view.AddLabel("Click a bee in the hive view to select its cell.")
@@ -69532,9 +69563,12 @@ do
  levels.AddSwitch("New Bees Catch Up To Hive",nil,"progression","catchup",{Tooltip="Newly occupied slots catch up to the highest existing bee level, within your treat budget."})
  levels.AddSwitch("Level Preferred Color First",nil,"progression","levelcolor")
  levels.AddDropdown("Priority Bee Types",p.types,nil,nil,"progression","prioritytypes",{Multiple=true})
- levels.AddDropdown("Higher Level Bee Type",p.types,nil,nil,"progression","prioritytype")
+ levels.AddDropdown("Higher Level Bee Types",p.types,nil,nil,"progression","priorityselection",{Multiple=true})
  levels.AddSlider("Higher Level Target",nil,1,25,"progression","prioritylevel",{Left=true})
- levels.AddButton("Apply Higher Level To Type",function() cfg.progression.prioritylevels[cfg.progression.prioritytype]=cfg.progression.prioritylevel;saveConfig() end)
+ levels.AddButton("Apply Higher Level To Selected Types",function()
+  local count=p:ApplySelectedCounts("prioritylevels",cfg.progression.priorityselection,cfg.progression.prioritylevel)
+  saveConfig();ui.Notify("Progression",count>0 and ("Saved level targets for "..count.." bee types") or "Select at least one bee type")
+ end)
  levels.AddButton("Apply Higher Level To Selected Cell",function()
   if cfg.progression.selectedcell and cfg.progression.selectedcell~="" then cfg.progression.celllevels[cfg.progression.selectedcell]=cfg.progression.prioritylevel;saveConfig() end
  end)
@@ -69550,6 +69584,10 @@ do
  items.AddSlider("Jellybean Budget Per Execution",nil,0,100,"progression","beanbudget",{Left=true})
  local vicious=tab.AddFolder("Auto Vicious Bee",true)
  vicious.AddSwitch("Auto Vicious Bee",nil,"progression","vicious")
+ local minSlider,maxSlider
+ minSlider=vicious.AddSlider("Minimum Vicious Bee Level",function(n) if maxSlider and n>cfg.progression.viciousmax then maxSlider.Set(n) end end,1,12,"progression","viciousmin",{Left=true})
+ maxSlider=vicious.AddSlider("Maximum Vicious Bee Level",function(n) if minSlider and n<cfg.progression.viciousmin then minSlider.Set(n) end end,1,12,"progression","viciousmax",{Left=true})
+ vicious.AddSwitch("Stop Farming Vicious After Buying",nil,"progression","stopviciousafterbuy",{Tooltip="Stops Progression and Combat Vicious hunting once its egg is owned or hatched. Hatching and catch-up leveling continue. Turn this off to keep farming stingers after purchase."})
  vicious.AddLabel("Enable farming to hunt Vicious until 250 stingers.")
  vicious.AddLabel("Claims its egg, then waits for a NEW purchased empty slot.")
  vicious.AddLabel("No hive slots are purchased automatically by this option.")
