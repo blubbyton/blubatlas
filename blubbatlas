@@ -181,6 +181,7 @@ local cfg = {
   autolevel=false,level=10,catchup=true,levelcolor=false,prioritytypes={},prioritylevels={},celllevels={},prioritytype="Vicious",prioritylevel=12,
   treatbudget=10000,treatreserve=1000,cloud=false,cloudbudget=1,beans=false,beanbudget=1,vicious=false,
   giftedselection={},ungiftedselection={},priorityselection={},viciousmin=1,viciousmax=12,stopviciousafterbuy=true,
+  buytreats=false,buyjelly=false,buyjellyamount=100,buyjellymax=false,
  },
 	vars = {
 		walkspeedenabled = false,
@@ -1428,7 +1429,7 @@ function configStore:Import(value)
 	return result
 end
 configStore.customKeys={
- progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious","giftedselection","ungiftedselection","priorityselection","viciousmin","viciousmax","stopviciousafterbuy"},
+ progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious","giftedselection","ungiftedselection","priorityselection","viciousmin","viciousmax","stopviciousafterbuy","buytreats","buyjelly","buyjellyamount","buyjellymax"},
 	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
 	planters={"optimize"},
 	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
@@ -3628,6 +3629,7 @@ do
 								local team = beeTeams[string.gsub(cell.CellType.Value, "Bee", "")]
 								local ImageButton2 = Instance.new("ImageButton")
 								ImageButton2.Name = "Bee"
+								ImageButton2:SetAttribute("AtlasPreserveBeeColors", true)
 								ImageButton2.AutoButtonColor = false
 								ImageButton2.BackgroundColor3 = cell.Backplate.Color
 								ImageButton2.BorderSizePixel = 0
@@ -52561,7 +52563,7 @@ local qolIcons = {
 			self.themeObjects=_G.atlas and _G.atlas:GetDescendants() or {}
 		end
 		for _, object in ipairs(self.themeObjects) do
-			if object:IsA("GuiObject") and object.BackgroundTransparency<1 then
+			if object:IsA("GuiObject") and object.BackgroundTransparency<1 and not (object.GetAttribute and object:GetAttribute("AtlasPreserveBeeColors")) then
 				local original=self.themeOriginal[object] or object.BackgroundColor3; self.themeOriginal[object]=original
 				local _,_,value=original:ToHSV()
 				object.BackgroundColor3=Color3.fromHSV(hue,0.45,value*brightness)
@@ -65563,6 +65565,37 @@ do
   end
   return best
  end
+ function p:TreatsNeeded(cells,bondTable)
+  local needed=0
+  for _,cell in ipairs(cells) do
+   local target=self:LevelTarget(cell,cells)
+   if (cell.bee.Lvl or 1)<target then
+    local required=bondTable[target-1]
+    if not required then return nil end
+    needed+=math.max(0,math.ceil((required-(cell.bee.Bond or 0))/(self.treatBond or 10)))
+   end
+  end
+  return math.min(needed,math.max(0,cfg.progression.treatbudget-self.spentTreats))
+ end
+ function p:AffordableAmount(limit,quote,honey)
+  -- Query the game's full bulk price; do not assume a fixed per-item price.
+  local low,high=0,1
+  limit=math.clamp(math.floor(limit),0,9007199254740991)
+  while high<=limit do
+   local cost=quote(high)
+   if not cost or cost>honey then break end
+   low=high
+   if high==limit then return low end
+   high=math.min(limit,high*2)
+  end
+  high=math.min(limit,high-1)
+  while low<high do
+   local mid=low+math.ceil((high-low)/2)
+   local cost=quote(mid)
+   if cost and cost<=honey then low=mid else high=mid-1 end
+  end
+  return low
+ end
 end
 
 -- Progression runtime shares the normal farming scheduler, never a competing movement loop.
@@ -65624,8 +65657,14 @@ do
    for _,setting in ipairs({"RollToLegendary","RollToMythic","RollToMutation","RollToGifted"}) do gameApi:Event("PlayerSettingsEvent",setting,false) end
    self.spentJelly+=amount
   elseif item=="Treat" then self.spentTreats+=amount end
+  local beforeBond=bee and bee.Bond
   local remaining,ok,honeycomb,discovered,eggUses=gameApi:Event("ConstructHiveCellFromEgg",cell.x,cell.y,item,amount,false)
   if not ok then self:Status("Game rejected "..item.."; retry delayed");self.nextAction=os.clock()+10;return false end
+  if item=="Treat" and type(beforeBond)=="number" then
+   local after=honeycomb and honeycomb["x"..cell.x] and honeycomb["x"..cell.x]["y"..cell.y]
+   local rate=after and type(after.Bond)=="number" and (after.Bond-beforeBond)/amount
+   if rate and rate>=1 and rate<=100 then self.treatBond=rate end
+  end
   gameApi:CacheSet({"Eggs",item},remaining)
   if type(honeycomb)=="table" then gameApi:CacheSet("Honeycomb",honeycomb) end
   if discovered then gameApi:CacheSet("DiscoveredBees",discovered) end
@@ -65640,8 +65679,71 @@ do
   local remaining=math.min(c.treatbudget-self.spentTreats,(eggs.Treat or 0)-c.treatreserve)
   local required=questData.bond[cell.bee.Lvl or 1]
   if not required or remaining<1 then self:Status("Treat limit reached");return false end
-  local amount=math.min(10000,remaining,math.max(1,math.ceil((required-(cell.bee.Bond or 0))/10)))
+  local amount=math.min(10000,remaining,math.max(1,math.ceil((required-(cell.bee.Bond or 0))/(self.treatBond or 10))))
+  if c.buytreats and not self.treatBond then amount=1 end
   return self:CellAction(cell,"Treat",math.floor(amount))
+ end
+ function p:PurchasePending()
+  local pending=self.pendingPurchase
+  if not pending then return false end
+  if os.clock()<(pending.checkAt or 0) then return true end
+  pending.checkAt=os.clock()+5
+  gameApi:CacheUpdate()
+  local count=(gameApi:Cache("Eggs") or {})[pending.item] or 0
+  if count>pending.before then
+   self:Status("Purchased "..(count-pending.before).." "..pending.item)
+   self.pendingPurchase=nil
+   return false
+  end
+  self:Status("Waiting for "..pending.item.." purchase confirmation; no repeat purchase")
+  return true
+ end
+ function p:BuyItem(item,limit)
+  if self.pendingPurchase or state.stop or cfg.rbc.enabled or limit<1 or os.clock()<(self.nextPurchase or 0) then return false end
+  local data=gameApi:Cache()
+  local function quote(amount)
+   local ok,costs=pcall(secureCall,gameApi.ItemPackages.GetCost,{Category="Eggs",Type=item,Amount=amount},data)
+   if not ok or type(costs)~="table" then return nil end
+   local total=0
+   for _,cost in ipairs(costs[1] and costs or {costs}) do
+    if cost.Category~="Honey" or type(cost.Amount)~="number" or cost.Amount~=cost.Amount or cost.Amount<0 or cost.Amount==math.huge then return nil end
+    total+=cost.Amount
+   end
+   return total>0 and total<math.huge and total or nil
+  end
+  local amount=self:AffordableAmount(limit,quote,localPlayer.CoreStats.Honey.Value)
+  if amount<1 then self.nextPurchase=os.clock()+10;self:Status("Cannot afford "..item.." or price unavailable");return false end
+  local price=quote(amount)
+  if state.stop or cfg.rbc.enabled or not price or price>localPlayer.CoreStats.Honey.Value then return false end
+  local before=(gameApi:Cache("Eggs") or {})[item] or 0
+  self.pendingPurchase={item=item,before=before}
+  self.nextPurchase=os.clock()+10
+  local ok,result=pcall(function() return gameApi:Event("ItemPackageEvent","Purchase",{Category="Eggs",Type=item,Amount=amount}) end)
+  if ok and result==false then
+   self.pendingPurchase=nil;self:Status("Game rejected "..item.." purchase");return false
+  end
+  -- Even an interrupted response may have purchased successfully; reconcile inventory before retrying.
+  self:PurchasePending()
+  return true
+ end
+ function p:BuyTreats(cells)
+  if not cfg.progression.buytreats then return false end
+  local needed=self:TreatsNeeded(cells,questData.bond)
+  if not needed or needed<1 then return false end
+  -- Learn the actual server bond gain before buying the full deficit (Puppy/amulet bonuses included).
+  if not self.treatBond then needed=1 end
+  local available=(gameApi:Cache("Eggs") or {}).Treat or 0
+  local deficit=math.max(0,needed+cfg.progression.treatreserve-available)
+  if deficit>0 then return self:BuyItem("Treat",deficit) end
+  return false
+ end
+ function p:BuyJelly()
+  if not cfg.progression.buyjelly and not self.jellyPurchaseQueued then return false end
+  local stock=(gameApi:Cache("Eggs") or {}).RoyalJelly or 0
+  if not self.jellyPurchaseQueued and stock>cfg.progression.jellyreserve then return false end
+  local limit=cfg.progression.buyjellymax and 9007199254740991 or cfg.progression.buyjellyamount
+  if self:BuyItem("RoyalJelly",limit) then self.jellyPurchaseQueued=false;return true end
+  return false
  end
  function p:Vicious(cells)
   if not cfg.progression.vicious then return false end
@@ -65751,10 +65853,13 @@ do
   self.busy=true;self.nextAction=os.clock()+1
   local ok,err=pcall(function()
    local cells=self:Observe();local c=cfg.progression
+   if self:PurchasePending() then return end
    if self.treasureQueued then self:CollectTreasures();return end
    if self:Vicious(cells) then return end
+   if self:BuyTreats(cells) then return end
    local feeding=self:FeedCandidate(cells)
    if feeding and self:Feed(feeding,cells) then return end
+   if self:BuyJelly() then return end
    if self.editTarget then
     local job=self.editTarget;local chosen
     for _,cell in ipairs(cells) do if cell.id==job.id then chosen=cell;break end end
@@ -69575,6 +69680,15 @@ do
  levels.AddButton("Clear Higher Level Overrides",function() cfg.progression.prioritylevels={};cfg.progression.celllevels={};saveConfig() end)
  levels.AddSlider("Treat Budget Per Execution",nil,0,1000000,"progression","treatbudget",{Left=true})
  levels.AddSlider("Treat Reserve",nil,0,1000000,"progression","treatreserve",{Left=true})
+ local buying=tab.AddFolder("Treat and Royal Jelly Purchases",true)
+ buying.AddSwitch("Auto Buy Treats Needed For Level Goals",nil,"progression","buytreats",{Tooltip="Buys the treat shortfall for your level goals, within the remaining treat budget. Subtracts inventory, retains your reserve, and learns bond per treat from feeding before a bulk purchase."})
+ buying.AddLabel("Treat buying follows your level goals and treat budget.")
+ buying.AddSwitch("Auto Buy Royal Jelly",nil,"progression","buyjelly",{Tooltip="Buys a batch when your Royal Jelly stock reaches the configured reserve or below."})
+ buying.AddSlider("Royal Jelly Amount To Buy",nil,1,1000000,"progression","buyjellyamount",{Left=true})
+ buying.AddSwitch("Buy Maximum Affordable Royal Jelly",nil,"progression","buyjellymax",{Tooltip="Overrides the quantity and spends as much available honey as the game allows on Royal Jelly. Auto-refills only when stock reaches your reserve."})
+ buying.AddButton("Buy Royal Jelly Now",function() p.jellyPurchaseQueued=true;p:Status("Royal Jelly purchase queued") end)
+ buying.AddButton("Cancel Queued Royal Jelly Purchase",function() p.jellyPurchaseQueued=false end)
+ buying.AddLabel("Buy max can spend all available honey.")
  local items=tab.AddFolder("Hidden Items and Field Buffs",true)
  items.AddButton("Collect Available Hidden Items",function() p.cancelTreasures=false;p.treasureQueued=true;p:Status("Hidden item route queued") end)
  items.AddButton("Cancel Hidden Item Route",function() p.cancelTreasures=true;p.treasureQueued=false end)
