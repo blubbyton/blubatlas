@@ -69297,11 +69297,15 @@ which bees and get all 3 targets if
 				end, "rbc", "round25opt")
 				rbcOptFolder.AddDropdown("Hive Color", { "Blue", "Red", "White" }, nil, function(color)
 					cfg.rbc.glitterhivecolor = color
+					cfg.rbc.preset = color
+					if not cfg.rbc.upgrades then cfg.rbc.upgrades = {} end
+					local colorUpgrade = color == "Blue" and "SSD: Blue" or color == "Red" and "SSD: Red" or "SSD: White"
+					if not cfg.rbc.upgrades[colorUpgrade] then cfg.rbc.upgrades[colorUpgrade] = { true, false, 10, false } end
+					cfg.rbc.upgrades[colorUpgrade][1] = true
 					saveConfig()
-					ui.Notify("Hive Color", "Set to " .. color)
+					rbcFolder:Refresh()
+					ui.Notify("Hive Color", "Preset set to " .. color)
 				end, "rbc", "glitterhivecolor")
-				rbcOptFolder.AddSwitch("Use Drives On Certain Rounds", nil, "rbc", "usedrivesonrounds")
-				rbcOptFolder.AddSwitch("If Struggling", nil, "rbc", "struggling")
 				rbcOptFolder.AddSwitch("Drive Runs", function(enabled)
 					if enabled then
 						cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
