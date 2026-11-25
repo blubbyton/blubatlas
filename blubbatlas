@@ -478,7 +478,6 @@ local cfg = {
 	memorymatch = { blacklist = false, basic = false, mega = false, night = false, extreme = false },
 	misc = {
 		autorejoin2 = false,
-	privateserverlink = "",
 		anonymous = false,
 		mobiletoggle = false,
 		console = false,
@@ -70349,20 +70348,6 @@ end
 public server.
 Are you sure you want to enable it?]])
 					end
-
-				Debug.AddTextBox("Private Server Link", function(link)
-					cfg.misc.privateserverlink = link
-					saveConfig()
-				end, cfg.misc.privateserverlink, nil, { Clear = true, Size = 250 })
-
-				Debug.AddButton("Test Private Server", function()
-					if cfg.misc.privateserverlink == "" then
-						ui.Notify("Private Server", "No link set")
-					else
-						ui.Notify("Private Server", "Attempting to join...")
-						pcall(function() game:GetService("TeleportService"):TeleportToPrivateServer(game.PlaceId, cfg.misc.privateserverlink, {localPlayer}) end)
-					end
-				end, 120)
 				end, "misc", "autorejoin2", { Tooltip = "You need to have atlas in your\nautoexec folder" })
 
 				Debug.Toggle(true)
