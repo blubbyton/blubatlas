@@ -53050,7 +53050,7 @@ local qolIcons = {
   if not self.farmingTick or now-self.farmingTick>4 then return end
   local root=getRootPart();local humanoid=getHumanoid()
   if not root or not humanoid or humanoid.Health<=0 or humanoid.Sit or humanoid.FloorMaterial==Enum.Material.Air or getFieldAt(root.Position)~=currentField then return end
-  local prompt=gameGui:FindFirstChild("RoboBearPrompt")
+  local prompt=localPlayer.PlayerGui.ScreenGui:FindFirstChild("RoboBearPrompt")
   if prompt and prompt.Visible then return end
   local options=self.farmingOptions or {}
   if self.motionUntil and now<self.motionUntil then return end
