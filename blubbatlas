@@ -729,6 +729,7 @@ local cfg = {
 		precisemin = 5,
 		cogupgrades = true,
 		upgradesenabled = false,
+	evenupgrades = false,
 		upgrades = false,
 		rerollupgrades = false,
 		rerollupgmax = 2,
@@ -63874,6 +63875,11 @@ end
 									if not child.FadeOut.Visible then
 										logger.log("Upgrading", upgradeName, "to level", upgradeLevel)
 										pickUpgrade = true
+										if cfg.rbc.evenupgrades then
+											if not cfg.rbc.upgradeCounts then cfg.rbc.upgradeCounts = {} end
+											cfg.rbc.upgradeCounts[upgradeName] = (cfg.rbc.upgradeCounts[upgradeName] or 0) + 1
+											saveConfig()
+										end
 									else
 										local lockButton = upgradeSelectScreen.LockFrame["Button" .. (tonumber(string.match(child.Name, "%d+")) or 1)]
 										canRerollUpgrades = nil
@@ -69477,6 +69483,7 @@ more accurate dodging]],
 				rbcUpgradeFolder.AddSwitch("Good Auto Buy Cog Upgrades", nil, "rbc", "goodcogupgrades", {Tooltip="Buy offered cog-income upgrades and lock unaffordable ones until they can be purchased. Prevents rerolls while saving a desired offer."})
 				rbcUpgradeFolder.AddSwitch("Buy Cog Upgrades", nil, "rbc", "cogupgrades")
 				controls["Auto Buy Upgrades"] = rbcUpgradeFolder.AddSwitch("Auto Buy Upgrades", nil, "rbc", "upgradesenabled")
+				rbcUpgradeFolder.AddSwitch("Even Out Upgrades", nil, "rbc", "evenupgrades", {Tooltip="Prefer upgrades you have fewer of, so no single upgrade dominates."})
 				rbcUpgradeFolder.AddSwitch("Reroll After Buying", nil, "rbc", "rerollupgrades")
 				rbcUpgradeFolder.AddSlider("Maximum Rerolls", nil, 0, 5, "rbc", "rerollupgmax", { Left = true })
 
