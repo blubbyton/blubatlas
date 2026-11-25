@@ -69291,6 +69291,7 @@ which bees and get all 3 targets if
 						cfg.rbc.closeroundsonly = true
 						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
 						saveConfig()
+						rbcFolder:Refresh()
 						ui.Notify("Round 25 Opt", "Applied round-25 optimization settings")
 					end
 				end, "rbc", "round25opt")
@@ -69308,6 +69309,7 @@ which bees and get all 3 targets if
 						cfg.rbc.maxround = 25
 						cfg.rbc.usedrivesonrounds = "1,2,3,4,5"
 						saveConfig()
+						rbcFolder:Refresh()
 						ui.Notify("Drive Runs", "Applied best drive farming settings")
 					end
 				end, "rbc", "driveruns")
