@@ -497,6 +497,7 @@ local cfg = {
 		enabled = false,
 		optimize = false,
 		method = "Manual",
+		replaceall = false,
 		manual = {
 			farmfield = false,
 			planter1 = {
@@ -664,6 +665,13 @@ local cfg = {
 		preset = "Blue",
 		buydrives = false,
 		usedrives = false,
+		usedrivesonrounds = "",
+		struggling = false,
+		driveruns = false,
+		fuzzyalt = false,
+		detectamulets = false,
+		detectbeequips = false,
+		round25opt = false,
 		goldcogmowers = true,
 		trackmobs = false,
 		trackstarsaws = false,
@@ -784,6 +792,9 @@ local cfg = {
 		conversions = 2,
 		prog = false,
 		progblender = true,
+		prognoremotes = false,
+		progplanterreplace = false,
+		progalt = false,
 		route = false,
 		hiddenstickers = false,
 		meteor = false,
@@ -1444,7 +1455,7 @@ configStore.customKeys={
  progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious","giftedselection","ungiftedselection","priorityselection","viciousmin","viciousmax","stopviciousafterbuy","buytreats","buyjelly","buyjellyamount","buyjellymax"},
 	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
 	planters={"optimize"},
-	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","linkthreshold","dodgetoxin","mechroundpriority","prioritybees","questpreferences","roundquests","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
+	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","linkthreshold","dodgetoxin","mechroundpriority","prioritybees","questpreferences","roundquests","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail","round25opt","usedrivesonrounds","struggling","driveruns","fuzzyalt","detectamulets","detectbeequips"},
 	webhook={"rbcgraph"},
 }
 local function saveConfig(cacheOnly)
@@ -68247,6 +68258,7 @@ which bees and get all 3 targets if
 				local cycleFolders = {}
 				local Nectar = nil
 				controls["Auto Planters"] = Planters.AddSwitch("Auto Planters", nil, "planters", "enabled")
+				Planters.AddSwitch("Replace All Planters On Join", nil, "planters", "replaceall")
 
 				local function updatePlanterVisibility(method, optimize)
 					for _, folder in ipairs(planterFolders) do
@@ -68860,6 +68872,8 @@ which bees and get all 3 targets if
 			end
 
 			local Progression = toys.AddFolder("Progression")
+			Progression.AddSwitch("No Remotes (Fly To Shop)", nil, "toys", "prognoremotes")
+			Progression.AddSwitch("Better Alt Progression", nil, "toys", "progalt")
 			Progression.AddLabel("Default route is blue.")
 			controls["Next Item"] = Progression.AddLabel("Next item: ?")
 			controls["Hive Slot"] = Progression.AddLabel("Next hive slot: 0?")
@@ -69270,6 +69284,15 @@ which bees and get all 3 targets if
 			do
 				local rbcFolder = controls.rbc.AddFolder("Robo Bear Challenge")
 				local rbcQuestFolder = controls.rbc.AddFolder("Quest Settings", true)
+				local rbcOptFolder = controls.rbc.AddFolder("RBC Optimization", true)
+				rbcOptFolder.AddSwitch("Daily Round 25 Optimization", nil, "rbc", "round25opt")
+				rbcOptFolder.AddSwitch("Use Drives On Certain Rounds", nil, "rbc", "usedrivesonrounds")
+				rbcOptFolder.AddSwitch("If Struggling", nil, "rbc", "struggling")
+				rbcOptFolder.AddSwitch("Drive Runs", nil, "rbc", "driveruns")
+				rbcOptFolder.AddSwitch("I Have A Fuzzy Alt", nil, "rbc", "fuzzyalt")
+				rbcOptFolder.AddSwitch("Detect Amulets", nil, "rbc", "detectamulets")
+				rbcOptFolder.AddSwitch("Detect Beequips", nil, "rbc", "detectbeequips")
+				rbcOptFolder.Toggle(true, true)
 				local rbcUpgradeFolder = controls.rbc.AddFolder("Upgrade Settings", true)
 				local rbcEquipmentFolder = controls.rbc.AddFolder("Equipment Settings", true)
 				local rbcAmuletFolder = controls.rbc.AddFolder("Amulet Settings", true)
