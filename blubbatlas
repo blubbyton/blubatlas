@@ -63844,6 +63844,11 @@ end
 				if not (not upgradeSelectScreen.Visible or not cfg.rbc.cogupgrades and not cfg.rbc.upgradesenabled and not cfg.rbc.goodcogupgrades) then
 					local canRerollUpgrades = true
 
+					if not cfg.rbc.fuzzyalt then
+						if not cfg.rbc.upgrades then cfg.rbc.upgrades = {} end
+						if not cfg.rbc.upgrades["Router"] then cfg.rbc.upgrades["Router"] = { true, false, 10, false } end
+						cfg.rbc.upgrades["Router"][1] = true
+					end
 					for _, child in ipairs(upgradeSelectScreen.ButtonFrame:GetChildren()) do
 						if not (not string.find(child.Name, "Button") or not child.Visible or not child.TextTitle.Visible) then
 							local incomeUpgrade=findMatch(rbc.cogupgrades,child.TextTitle.Text)
