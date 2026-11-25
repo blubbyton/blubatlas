@@ -63865,7 +63865,7 @@ end
 
 								if not upgradeLevel or not roundNumber then
 									logger.warn("Failed to get info for", upgradeName, "Level:", upgradeLevel, "Round:", roundNumber)
-								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber]))) then
+								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber])))  and not (cfg.rbc.fuzzyalt and upgradeName ~= "Homepage") then
 									if not child.FadeOut.Visible then
 										logger.log("Upgrading", upgradeName, "to level", upgradeLevel)
 										pickUpgrade = true
