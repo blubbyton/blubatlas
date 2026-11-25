@@ -70350,6 +70350,8 @@ public server.
 Are you sure you want to enable it?]])
 					end
 
+				end, "misc", "autorejoin2", { Tooltip = "You need to have atlas in your\nautoexec folder" })
+
 				Debug.AddTextBox("Private Server Link", function(link)
 					cfg.misc.privateserverlink = link
 					saveConfig()
@@ -70363,7 +70365,7 @@ Are you sure you want to enable it?]])
 						pcall(function() game:GetService("TeleportService"):TeleportToPrivateServer(game.PlaceId, cfg.misc.privateserverlink, {localPlayer}) end)
 					end
 				end, 120)
-				end, "misc", "autorejoin2", { Tooltip = "You need to have atlas in your\nautoexec folder" })
+
 
 				Debug.Toggle(true)
 
