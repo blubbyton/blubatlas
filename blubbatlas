@@ -715,6 +715,16 @@ local cfg = {
 		qolrares = false,
 		qolpuffalerts = false,
 		qolpuffhighlight = false,
+	qol1 = false,
+	qol2 = false,
+	qol3 = false,
+	qol4 = false,
+	qol5 = false,
+	qol6 = false,
+	qol7 = false,
+	qol8 = false,
+	qol9 = false,
+	qol10 = false,
 		autoglitter = false,
 		glittertrigger = "Either",
 		glitterstall = 30,
@@ -70224,6 +70234,16 @@ end
 
 				local developer=controls.dev.AddFolder("Control Panel",true)
                 developer.AddButton("?",function() ui.Notify("Control Panel","This is for bug finding and fixing. Shows live decisions, targets, movement, blockers, resource usage and recent actions.") end,25)
+				qol.AddSwitch("Show Honey Per Second", nil, "rbc", "qol1", {Tooltip="Display honey gain rate on screen."})
+				qol.AddSwitch("Show Pollen Per Second", nil, "rbc", "qol2", {Tooltip="Display pollen gain rate on screen."})
+				qol.AddSwitch("Show Field Time", nil, "rbc", "qol3", {Tooltip="Show time spent in current field."})
+				qol.AddSwitch("Show Quest Time", nil, "rbc", "qol4", {Tooltip="Show time spent on current quest."})
+				qol.AddSwitch("Show Bee Levels", nil, "rbc", "qol5", {Tooltip="Display bee levels in hive."})
+				qol.AddSwitch("Show Token Count", nil, "rbc", "qol6", {Tooltip="Show total token count on screen."})
+				qol.AddSwitch("Show Cooldowns", nil, "rbc", "qol7", {Tooltip="Show ability cooldowns."})
+				qol.AddSwitch("Show Mob Count", nil, "rbc", "qol8", {Tooltip="Show nearby mob count."})
+				qol.AddSwitch("Show Player Count", nil, "rbc", "qol9", {Tooltip="Show server player count."})
+				qol.AddSwitch("Show FPS", nil, "rbc", "qol10", {Tooltip="Show current FPS."})
                 state.dev.toggle=developer.AddSwitch("Show Control Panel",nil,"dev","showpanel",{Tooltip="This is for bug finding and fixing."})
                 developer.AddButton("Clear Decision History",function() state.dev.history={} end)
                 developer.AddButton("Copy Diagnostics",function()
