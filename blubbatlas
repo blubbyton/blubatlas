@@ -69282,7 +69282,16 @@ which bees and get all 3 targets if
 				rbcOptFolder.AddSwitch("Daily Round 25 Optimization", nil, "rbc", "round25opt")
 				rbcOptFolder.AddSwitch("Use Drives On Certain Rounds", nil, "rbc", "usedrivesonrounds")
 				rbcOptFolder.AddSwitch("If Struggling", nil, "rbc", "struggling")
-				rbcOptFolder.AddSwitch("Drive Runs", nil, "rbc", "driveruns")
+				rbcOptFolder.AddSwitch("Drive Runs", function(enabled)
+					if enabled then
+						cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
+						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
+						cfg.rbc.maxround = 25
+						cfg.rbc.usedrivesonrounds = "1,2,3,4,5"
+						saveConfig()
+						ui.Notify("Drive Runs", "Applied best drive farming settings")
+					end
+				end, "rbc", "driveruns")
 				rbcOptFolder.AddSwitch("I Have A Fuzzy Alt", nil, "rbc", "fuzzyalt")
 				rbcOptFolder.AddSwitch("Detect Amulets", nil, "rbc", "detectamulets")
 				rbcOptFolder.AddSwitch("Detect Beequips", nil, "rbc", "detectbeequips")
