@@ -52492,16 +52492,10 @@ local qolIcons = {
    self.petalCircle=nil;return false
   end
   local center=self.petalCircle.center
-  local delta=self:Flat(root-center)
-  local point=center
-  if delta.Magnitude<=6 then
-   -- Anchor phase to the player's current position, keeping the destination ahead of them.
-   local angle=math.atan2(delta.Z,delta.X)+1.2
-   point=center+Vector3.new(math.cos(angle)*2.5,0,math.sin(angle)*2.5)
-  end
+   local point=petal and petal.Position or center
   local mobs=options.rbc and self:Mobs(currentField,root) or {}
   if not self:Safe(point,root,currentField,mobs,nil,options) then return false end
-  self:SetIntent("Circling bloom petals",point,options)
+  self:SetIntent("Tracking bloom",point,options)
   getHumanoid():MoveTo(point)
   return true
  end
