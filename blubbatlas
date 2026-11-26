@@ -662,8 +662,8 @@ local cfg = {
 	rbc = {
 		enabled = false,
 		preset = "Blue",
-		buydrives = false,
-		usedrives = false,
+		buydrives = {},
+		usedrives = {},
 		usedrivesonrounds = "",
 		struggling = false,
 		driveruns = false,
@@ -69368,13 +69368,13 @@ which bees and get all 3 targets if
 
 				rbcFolder.AddDropdown("Preset", { "Blue", "Red", "White" }, nil, nil, "rbc", "preset")
 
-				if not cfg.rbc.buydrives then
+				if cfg.rbc.buydrives == nil then
 					cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
 				end
 
 				rbcFolder.AddDropdown("Drives To Buy", { "Blue", "Red", "White", "Glitched" }, nil, nil, "rbc", "buydrives", { Multiple = true })
 
-				if not cfg.rbc.usedrives then
+				if cfg.rbc.usedrives == nil then
 					cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
 				end
 
