@@ -53062,12 +53062,18 @@ local qolIcons = {
   if not self.keepPosition then self.keepPosition=root.Position;self.keepTime=now;if not force then return end end
   if not force and now-(self.keepTime or now)<0.55 then return end
   self.keepTime=now
-  local point=self:MovingPoint(options)
-  if point then
-   nextMoveTime=nil;self:SetIntent("Recovering field movement",point,options)
-   humanoid:MoveTo(point)
-   if state.dev then state.dev:Record("Recovery","New walkable destination issued") end
-  end
+   local point=self:MovingPoint(options)
+   if not point then
+    -- Always have somewhere to move: pick a random walkable direction.
+    local angle=math.random()*math.pi*2
+    point=root+Vector3.new(math.cos(angle)*6,0,math.sin(angle)*6)
+    if getFieldAt(point)~=currentField then point=root end
+   end
+   if point then
+    nextMoveTime=nil;self:SetIntent("Recovering field movement",point,options)
+    humanoid:MoveTo(point)
+    if state.dev then state.dev:Record("Recovery","New walkable destination issued") end
+   end
  end
 
 	function combat:RecoverMovement(options)
