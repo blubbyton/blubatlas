@@ -53048,7 +53048,7 @@ local qolIcons = {
  end
  function combat:KeepMoving(force)
   local now=os.clock()
-  if not cfg.autofarm.enabled or state.stop or state.fasttween or state.stopface or state.hiveProgression and state.hiveProgression.busy then return end
+  if not cfg.autofarm.enabled or state.stop or state.fasttween or state.stopface or state.hiveProgression and (state.hiveProgression.busy or state.hiveProgression.altBusy) then return end
   if not self.farmingTick or now-self.farmingTick>4 then return end
   local root=getRootPart();local humanoid=getHumanoid()
   if not root or not humanoid or humanoid.Health<=0 or humanoid.Sit or humanoid.FloorMaterial==Enum.Material.Air or getFieldAt(root.Position)~=currentField then return end
@@ -66246,9 +66246,10 @@ do
    if self:PurchasePending() then return end
    if self.treasureQueued then self:CollectTreasures();return end
    if self:Vicious(cells) then return end
-   if self:LevelSession() then return end
-   if self:BuyJelly() then return end
-   if self.editTarget then
+    if self:LevelSession() then if cfg.toys.progalt then self.altBusy=true end return end
+    if self:BuyJelly() then if cfg.toys.progalt then self.altBusy=true end return end
+    if cfg.toys.progalt then self.altBusy=false end
+    if self.editTarget then
     local job=self.editTarget;local chosen
     for _,cell in ipairs(cells) do if cell.id==job.id then chosen=cell;break end end
     if not chosen then self.editTarget=nil;self:Status("Select an occupied bee to roll");return end
@@ -66264,6 +66265,7 @@ do
   end)
   if self.tween then self.tween:Cancel();self.tween=nil;state.fasttween=nil end
   self.busy=false;self.worker=nil
+	self.altBusy=false
   if not ok then self.nextAction=os.clock()+10;self:Status("Progression paused: "..tostring(err));logger.warn(err) end
  end
 end
