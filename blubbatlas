@@ -69366,6 +69366,14 @@ which bees and get all 3 targets if
 					if not n then state.rbcCombat:Reset() end
 				end, "rbc", "enabled")
 
+
+				rbcFolder.AddButton("Save Config", function()
+					if saveConfig() then
+						ui.Notify("Config", "Saved")
+					else
+						ui.Notify("Config", "Failed to save")
+					end
+				end, 86)
 				rbcFolder.AddDropdown("Preset", { "Blue", "Red", "White" }, nil, nil, "rbc", "preset")
 
 				if cfg.rbc.buydrives == nil then
