@@ -69369,16 +69369,16 @@ which bees and get all 3 targets if
 				rbcFolder.AddDropdown("Preset", { "Blue", "Red", "White" }, nil, nil, "rbc", "preset")
 
 				if cfg.rbc.buydrives == nil then
-					cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
+					cfg.rbc.buydrives = {}
 				end
 
-				rbcFolder.AddDropdown("Drives To Buy", { "Blue", "Red", "White", "Glitched" }, nil, nil, "rbc", "buydrives", { Multiple = true })
+				rbcFolder.AddDropdown("Drives To Buy", { "Blue", "Red", "White", "Glitched" }, nil, function() saveConfig() end, "rbc", "buydrives", { Multiple = true })
 
 				if cfg.rbc.usedrives == nil then
-					cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
+					cfg.rbc.usedrives = {}
 				end
 
-				rbcFolder.AddDropdown("Drives To Use", { "Blue", "Red", "White", "Glitched" }, nil, nil, "rbc", "usedrives", { Multiple = true })
+				rbcFolder.AddDropdown("Drives To Use", { "Blue", "Red", "White", "Glitched" }, nil, function() saveConfig() end, "rbc", "usedrives", { Multiple = true })
 				rbcFolder.AddSwitch("Quit After Round", nil, "rbc", "stoproundend")
 				rbcFolder.AddSwitch("Disable RBC After Round", nil, "rbc", "disableroundend", { Tooltip = "This is useful for when you want to do\nthe next round manually" })
 				rbcFolder.AddSlider("Maximum Round", nil, 4, 25, "rbc", "maxround", { Left = true })
