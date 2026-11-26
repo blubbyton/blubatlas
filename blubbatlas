@@ -663,7 +663,6 @@ local cfg = {
 		enabled = false,
 		preset = "Blue",
 		buydrives = {},
-		_drivesReset = false,
 		usedrivesonrounds = "",
 		struggling = false,
 		driveruns = false,
@@ -67105,12 +67104,6 @@ do
 	state.config=filename:gsub("%.json$","")
 	local loaded=configStore:Read("atlas/"..filename)
 	if loaded then mergeTable(cfg,loaded) end
-if not cfg.rbc._drivesReset then
-	cfg.rbc.buydrives = {}
-	cfg.rbc.usedrives = {}
-	cfg.rbc._drivesReset = true
-	saveConfig()
-end
 end
 
 if isfile("atlascache-" .. localPlayer.Name .. ".json") then
@@ -69382,15 +69375,15 @@ which bees and get all 3 targets if
 				end, 86)
 				rbcFolder.AddDropdown("Preset", { "Blue", "Red", "White" }, nil, nil, "rbc", "preset")
 
-				if cfg.rbc.buydrives == nil then
-					cfg.rbc.buydrives = {}
-				end
+
+
+
 
 				rbcFolder.AddDropdown("Drives To Buy", { "Blue", "Red", "White", "Glitched" }, nil, function() saveConfig() end, "rbc", "buydrives", { Multiple = true })
 
-				if cfg.rbc.usedrives == nil then
-					cfg.rbc.usedrives = {}
-				end
+
+
+
 
 				rbcFolder.AddDropdown("Drives To Use", { "Blue", "Red", "White", "Glitched" }, nil, function() saveConfig() end, "rbc", "usedrives", { Multiple = true })
 				rbcFolder.AddSwitch("Quit After Round", nil, "rbc", "stoproundend")
