@@ -1,32 +1,4 @@
 -- atlas by blub
-LPH_CRASH()
-collectObject = nil
-			local predFolder = tab.AddFolder("Predictive Engine", true)
-			predFolder.AddSwitch("Predict Honey Production", nil, "predictive", "predhoney")
-			predFolder.AddSwitch("Predict Backpack Fill", nil, "predictive", "predbackpack")
-			predFolder.AddSwitch("Predict Buff Expiry", nil, "predictive", "predbuffs")
-			predFolder.AddSwitch("Forecast Boost Profitability", nil, "predictive", "predboosts")
-			predFolder.AddSwitch("Estimate Milestone Time", nil, "predictive", "predmilestones")
-			predFolder.AddSwitch("Predict Efficiency Decline", nil, "predictive", "predefficiency")
-			predFolder.AddSwitch("Best Upgrade Timing", nil, "predictive", "predupgrades")
-			predFolder.AddSwitch("Rare Resource Value", nil, "predictive", "predresources")
-			predFolder.AddSwitch("Strategy Genealogy", nil, "predictive", "predgenealogy")
-			predFolder.AddSwitch("Track Mutations", nil, "predictive", "predmutations")
-			predFolder.AddSwitch("Detect Missing Event Bees", nil, "predictive", "predeventbees")
-			predFolder.AddSwitch("Unnecessary Movement", nil, "predictive", "predmovement")
-			predFolder.AddSwitch("Conversion Timing", nil, "predictive", "predconversion")
-			predFolder.AddSwitch("Missing Nearby Tokens", nil, "predictive", "predtokens")
-			predFolder.AddSwitch("Unnecessary Pauses", nil, "predictive", "predpauses")
-			predFolder.AddSwitch("Suboptimal Transitions", nil, "predictive", "predtransitions")
-			predFolder.AddSwitch("Farming Durations", nil, "predictive", "predfarmdur")
-			predFolder.AddSwitch("Token Collection Priority", nil, "predictive", "predtokencollect")
-			predFolder.AddSwitch("Boost Timing", nil, "predictive", "predboosttiming")
-			predFolder.AddSwitch("Conversion Intervals", nil, "predictive", "predconvintervals")
-			predFolder.AddSwitch("Recommend Replacements", nil, "predictive", "predreplacements")
-			predFolder.AddSwitch("Hive Slot Benefits", nil, "predictive", "predhiveslots")
-			predFolder.Toggle(true, true)
-LPH_CRASH()
--- atlas by blub
 -- Apply branding before the startup guard, including an already-running window.
 do
 	local titleText = "atlas by blub"
@@ -344,30 +316,6 @@ local cfg = {
 		bssui = false,
 		main = false,
 	},
-	predictive = {
-		predhoney = false,
-		predbackpack = false,
-		predbuffs = false,
-		predboosts = false,
-		predmilestones = false,
-		predefficiency = false,
-		predupgrades = false,
-		predresources = false,
-		predgenealogy = false,
-		predmutations = false,
-		predeventbees = false,
-		predmovement = false,
-		predconversion = false,
-		predtokens = false,
-		predpauses = false,
-		predtransitions = false,
-		predfarmdur = false,
-		predtokencollect = false,
-		predboosttiming = false,
-		predconvintervals = false,
-		predreplacements = false,
-		predhiveslots = false,
-	},
 	amulet = {
 		ant = false,
 		ant2 = false,
@@ -530,7 +478,6 @@ local cfg = {
 	memorymatch = { blacklist = false, basic = false, mega = false, night = false, extreme = false },
 	misc = {
 		autorejoin2 = false,
-	privateserverlink = "",
 		anonymous = false,
 		mobiletoggle = false,
 		console = false,
@@ -550,7 +497,6 @@ local cfg = {
 		enabled = false,
 		optimize = false,
 		method = "Manual",
-		replaceall = false,
 		manual = {
 			farmfield = false,
 			planter1 = {
@@ -718,13 +664,6 @@ local cfg = {
 		preset = "Blue",
 		buydrives = false,
 		usedrives = false,
-		usedrivesonrounds = "",
-		struggling = false,
-		driveruns = false,
-		fuzzyalt = false,
-		detectamulets = false,
-		detectbeequips = false,
-		round25opt = false,
 		goldcogmowers = true,
 		trackmobs = false,
 		trackstarsaws = false,
@@ -781,7 +720,6 @@ local cfg = {
 		precisemin = 5,
 		cogupgrades = true,
 		upgradesenabled = false,
-	evenupgrades = false,
 		upgrades = false,
 		rerollupgrades = false,
 		rerollupgmax = 2,
@@ -846,9 +784,6 @@ local cfg = {
 		conversions = 2,
 		prog = false,
 		progblender = true,
-		prognoremotes = false,
-		progplanterreplace = false,
-		progalt = false,
 		route = false,
 		hiddenstickers = false,
 		meteor = false,
@@ -1509,7 +1444,7 @@ configStore.customKeys={
  progression={"ssa","prefercolor","color","keepblue","giftedcounts","ungiftedcounts","giftedtype","ungiftedtype","giftedcount","ungiftedcount","jellybudget","jellyreserve","selectedcell","targettype","targetstatus","autolevel","level","catchup","levelcolor","prioritytypes","prioritylevels","celllevels","prioritytype","prioritylevel","treatbudget","treatreserve","cloud","cloudbudget","beans","beanbudget","vicious","giftedselection","ungiftedselection","priorityselection","viciousmin","viciousmax","stopviciousafterbuy","buytreats","buyjelly","buyjellyamount","buyjellymax"},
 	autofarm={"betterlineups","gooundersmiley","lineupbuffs"},
 	planters={"optimize"},
-	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","linkthreshold","dodgetoxin","mechroundpriority","prioritybees","questpreferences","roundquests","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail","round25opt","usedrivesonrounds","struggling","driveruns","fuzzyalt","detectamulets","detectbeequips"},
+	rbc={"autoglitter","avoidcrowds","betterrefreshflames","closecogmowers","closecogturrets","closeenemies","closeroundsonly","cloudminround","cloudreserve","cloudstalldelay","cloudvial","cloudvialmode","cloudvialrounds","combatdistance","enemyclearance","glitterfields","glitterhivecolor","glitterrounds","glitterstall","glittertrigger","goodcogupgrades","improveddodging","lowhealthretreat","outlinebrightness","outlinehue","outlineneon","outlinethickness","petalmargin","qolpuffalerts","qolpuffhighlight","qolrares","rainbowspeed","rainbowui","retreathealth","shorthops","smartlinks","linkthreshold","dodgetoxin","mechroundpriority","prioritybees","questpreferences","roundquests","smileydetour","starsawcogmowers","starsawcogturrets","stingerreserve","trackstarsaws","trailhue","uibrightness","uihue","uioutline","viewhitboxes","viewmovementtrail"},
 	webhook={"rbcgraph"},
 }
 local function saveConfig(cacheOnly)
@@ -52546,10 +52481,16 @@ local qolIcons = {
    self.petalCircle=nil;return false
   end
   local center=self.petalCircle.center
-   local point=petal and petal.Position or center
+  local delta=self:Flat(root-center)
+  local point=center
+  if delta.Magnitude<=6 then
+   -- Anchor phase to the player's current position, keeping the destination ahead of them.
+   local angle=math.atan2(delta.Z,delta.X)+1.2
+   point=center+Vector3.new(math.cos(angle)*2.5,0,math.sin(angle)*2.5)
+  end
   local mobs=options.rbc and self:Mobs(currentField,root) or {}
   if not self:Safe(point,root,currentField,mobs,nil,options) then return false end
-  self:SetIntent("Tracking bloom",point,options)
+  self:SetIntent("Circling bloom petals",point,options)
   getHumanoid():MoveTo(point)
   return true
  end
@@ -53100,7 +53041,7 @@ local qolIcons = {
  end
  function combat:KeepMoving(force)
   local now=os.clock()
-  if not cfg.autofarm.enabled or state.stop or state.fasttween or state.stopface or state.hiveProgression and (state.hiveProgression.busy or state.hiveProgression.altBusy) then return end
+  if not cfg.autofarm.enabled or state.stop or state.fasttween or state.stopface or state.hiveProgression and state.hiveProgression.busy then return end
   if not self.farmingTick or now-self.farmingTick>4 then return end
   local root=getRootPart();local humanoid=getHumanoid()
   if not root or not humanoid or humanoid.Health<=0 or humanoid.Sit or humanoid.FloorMaterial==Enum.Material.Air or getFieldAt(root.Position)~=currentField then return end
@@ -63897,11 +63838,6 @@ end
 				if not (not upgradeSelectScreen.Visible or not cfg.rbc.cogupgrades and not cfg.rbc.upgradesenabled and not cfg.rbc.goodcogupgrades) then
 					local canRerollUpgrades = true
 
-					if not cfg.rbc.fuzzyalt then
-						if not cfg.rbc.upgrades then cfg.rbc.upgrades = {} end
-						if not cfg.rbc.upgrades["Router"] then cfg.rbc.upgrades["Router"] = { true, false, 10, false } end
-						cfg.rbc.upgrades["Router"][1] = true
-					end
 					for _, child in ipairs(upgradeSelectScreen.ButtonFrame:GetChildren()) do
 						if not (not string.find(child.Name, "Button") or not child.Visible or not child.TextTitle.Visible) then
 							local incomeUpgrade=findMatch(rbc.cogupgrades,child.TextTitle.Text)
@@ -63923,15 +63859,10 @@ end
 
 								if not upgradeLevel or not roundNumber then
 									logger.warn("Failed to get info for", upgradeName, "Level:", upgradeLevel, "Round:", roundNumber)
-								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber])))  and not (cfg.rbc.fuzzyalt and upgradeName ~= "Homepage") then
+								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber]))) then
 									if not child.FadeOut.Visible then
 										logger.log("Upgrading", upgradeName, "to level", upgradeLevel)
 										pickUpgrade = true
-										if cfg.rbc.evenupgrades then
-											if not cfg.rbc.upgradeCounts then cfg.rbc.upgradeCounts = {} end
-											cfg.rbc.upgradeCounts[upgradeName] = (cfg.rbc.upgradeCounts[upgradeName] or 0) + 1
-											saveConfig()
-										end
 									else
 										local lockButton = upgradeSelectScreen.LockFrame["Button" .. (tonumber(string.match(child.Name, "%d+")) or 1)]
 										canRerollUpgrades = nil
@@ -66298,10 +66229,9 @@ do
    if self:PurchasePending() then return end
    if self.treasureQueued then self:CollectTreasures();return end
    if self:Vicious(cells) then return end
-    if self:LevelSession() then if cfg.toys.progalt then self.altBusy=true end return end
-    if self:BuyJelly() then if cfg.toys.progalt then self.altBusy=true end return end
-    if cfg.toys.progalt then self.altBusy=false end
-    if self.editTarget then
+   if self:LevelSession() then return end
+   if self:BuyJelly() then return end
+   if self.editTarget then
     local job=self.editTarget;local chosen
     for _,cell in ipairs(cells) do if cell.id==job.id then chosen=cell;break end end
     if not chosen then self.editTarget=nil;self:Status("Select an occupied bee to roll");return end
@@ -66317,7 +66247,6 @@ do
   end)
   if self.tween then self.tween:Cancel();self.tween=nil;state.fasttween=nil end
   self.busy=false;self.worker=nil
-	self.altBusy=false
   if not ok then self.nextAction=os.clock()+10;self:Status("Progression paused: "..tostring(err));logger.warn(err) end
  end
 end
@@ -68318,7 +68247,6 @@ which bees and get all 3 targets if
 				local cycleFolders = {}
 				local Nectar = nil
 				controls["Auto Planters"] = Planters.AddSwitch("Auto Planters", nil, "planters", "enabled")
-				Planters.AddSwitch("Replace All Planters On Join", nil, "planters", "replaceall")
 
 				local function updatePlanterVisibility(method, optimize)
 					for _, folder in ipairs(planterFolders) do
@@ -68932,8 +68860,6 @@ which bees and get all 3 targets if
 			end
 
 			local Progression = toys.AddFolder("Progression")
-			Progression.AddSwitch("No Remotes (Fly To Shop)", nil, "toys", "prognoremotes")
-			Progression.AddSwitch("Better Alt Progression", nil, "toys", "progalt")
 			Progression.AddLabel("Default route is blue.")
 			controls["Next Item"] = Progression.AddLabel("Next item: ?")
 			controls["Hive Slot"] = Progression.AddLabel("Next hive slot: 0?")
@@ -69344,44 +69270,7 @@ which bees and get all 3 targets if
 			do
 				local rbcFolder = controls.rbc.AddFolder("Robo Bear Challenge")
 				local rbcQuestFolder = controls.rbc.AddFolder("Quest Settings", true)
-				local rbcOptFolder = controls.rbc.AddFolder("RBC Optimization", true)
-				rbcOptFolder.AddSwitch("Daily Round 25 Optimization", function(enabled)
-					if enabled then
-						cfg.rbc.maxround = 25
-						cfg.rbc.closeroundsonly = true
-						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
-						saveConfig()
-						rbcFolder:Refresh()
-						ui.Notify("Round 25 Opt", "Applied round-25 optimization settings")
-					end
-				end, "rbc", "round25opt")
-				rbcOptFolder.AddDropdown("Hive Color", { "Blue", "Red", "White" }, nil, function(color)
-					cfg.rbc.glitterhivecolor = color
-					cfg.rbc.preset = color
-					if not cfg.rbc.upgrades then cfg.rbc.upgrades = {} end
-					local colorUpgrade = color == "Blue" and "SSD: Blue" or color == "Red" and "SSD: Red" or "SSD: White"
-					if not cfg.rbc.upgrades[colorUpgrade] then cfg.rbc.upgrades[colorUpgrade] = { true, false, 10, false } end
-					cfg.rbc.upgrades[colorUpgrade][1] = true
-					saveConfig()
-					rbcFolder:Refresh()
-					ui.Notify("Hive Color", "Preset set to " .. color)
-				end, "rbc", "glitterhivecolor")
-				rbcOptFolder.AddSwitch("Drive Runs", function(enabled)
-					if enabled then
-						cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
-						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
-						cfg.rbc.maxround = 25
-						cfg.rbc.usedrivesonrounds = "1,2,3,4,5"
-						saveConfig()
-						rbcFolder:Refresh()
-						ui.Notify("Drive Runs", "Applied best drive farming settings")
-					end
-				end, "rbc", "driveruns")
-				rbcOptFolder.AddSwitch("I Have A Fuzzy Alt", nil, "rbc", "fuzzyalt")
-				rbcOptFolder.AddSwitch("Detect Amulets", nil, "rbc", "detectamulets")
-				rbcOptFolder.AddSwitch("Detect Beequips", nil, "rbc", "detectbeequips")
-				rbcOptFolder.Toggle(true, true)
-				local predFolder = controls.rbc.AddFolder("Predictive Engine", true)
+				local rbcUpgradeFolder = controls.rbc.AddFolder("Upgrade Settings", true)
 				local rbcEquipmentFolder = controls.rbc.AddFolder("Equipment Settings", true)
 				local rbcAmuletFolder = controls.rbc.AddFolder("Amulet Settings", true)
 				local smart = controls.rbc.AddFolder("Smart Farming and RBC", true)
@@ -69537,7 +69426,6 @@ more accurate dodging]],
 				rbcUpgradeFolder.AddSwitch("Good Auto Buy Cog Upgrades", nil, "rbc", "goodcogupgrades", {Tooltip="Buy offered cog-income upgrades and lock unaffordable ones until they can be purchased. Prevents rerolls while saving a desired offer."})
 				rbcUpgradeFolder.AddSwitch("Buy Cog Upgrades", nil, "rbc", "cogupgrades")
 				controls["Auto Buy Upgrades"] = rbcUpgradeFolder.AddSwitch("Auto Buy Upgrades", nil, "rbc", "upgradesenabled")
-				rbcUpgradeFolder.AddSwitch("Even Out Upgrades", nil, "rbc", "evenupgrades", {Tooltip="Prefer upgrades you have fewer of, so no single upgrade dominates."})
 				rbcUpgradeFolder.AddSwitch("Reroll After Buying", nil, "rbc", "rerollupgrades")
 				rbcUpgradeFolder.AddSlider("Maximum Rerolls", nil, 0, 5, "rbc", "rerollupgmax", { Left = true })
 
@@ -70306,30 +70194,6 @@ do
    if not threads:Get("Autofarm") and not state.stop then p:Step();p:Materials() end
   end
  end)
-			local predFolder = tab.AddFolder("Predictive Engine", true)
-			predFolder.AddSwitch("Predict Honey Production", nil, "predictive", "predhoney")
-			predFolder.AddSwitch("Predict Backpack Fill", nil, "predictive", "predbackpack")
-			predFolder.AddSwitch("Predict Buff Expiry", nil, "predictive", "predbuffs")
-			predFolder.AddSwitch("Forecast Boost Profitability", nil, "predictive", "predboosts")
-			predFolder.AddSwitch("Estimate Milestone Time", nil, "predictive", "predmilestones")
-			predFolder.AddSwitch("Predict Efficiency Decline", nil, "predictive", "predefficiency")
-			predFolder.AddSwitch("Best Upgrade Timing", nil, "predictive", "predupgrades")
-			predFolder.AddSwitch("Rare Resource Value", nil, "predictive", "predresources")
-			predFolder.AddSwitch("Strategy Genealogy", nil, "predictive", "predgenealogy")
-			predFolder.AddSwitch("Track Mutations", nil, "predictive", "predmutations")
-			predFolder.AddSwitch("Detect Missing Event Bees", nil, "predictive", "predeventbees")
-			predFolder.AddSwitch("Unnecessary Movement", nil, "predictive", "predmovement")
-			predFolder.AddSwitch("Conversion Timing", nil, "predictive", "predconversion")
-			predFolder.AddSwitch("Missing Nearby Tokens", nil, "predictive", "predtokens")
-			predFolder.AddSwitch("Unnecessary Pauses", nil, "predictive", "predpauses")
-			predFolder.AddSwitch("Suboptimal Transitions", nil, "predictive", "predtransitions")
-			predFolder.AddSwitch("Farming Durations", nil, "predictive", "predfarmdur")
-			predFolder.AddSwitch("Token Collection Priority", nil, "predictive", "predtokencollect")
-			predFolder.AddSwitch("Boost Timing", nil, "predictive", "predboosttiming")
-			predFolder.AddSwitch("Conversion Intervals", nil, "predictive", "predconvintervals")
-			predFolder.AddSwitch("Recommend Replacements", nil, "predictive", "predreplacements")
-			predFolder.AddSwitch("Hive Slot Benefits", nil, "predictive", "predhiveslots")
-			predFolder.Toggle(true, true)
 end
 
 				local developer=controls.dev.AddFolder("Control Panel",true)
@@ -70445,23 +70309,7 @@ end
 public server.
 Are you sure you want to enable it?]])
 					end
-
 				end, "misc", "autorejoin2", { Tooltip = "You need to have atlas in your\nautoexec folder" })
-
-				Debug.AddTextBox("Private Server Link", function(link)
-					cfg.misc.privateserverlink = link
-					saveConfig()
-				end, cfg.misc.privateserverlink, nil, { Clear = true, Size = 250 })
-
-				Debug.AddButton("Test Private Server", function()
-					if cfg.misc.privateserverlink == "" then
-						ui.Notify("Private Server", "No link set")
-					else
-						ui.Notify("Private Server", "Attempting to join...")
-						pcall(function() game:GetService("TeleportService"):TeleportToPrivateServer(game.PlaceId, cfg.misc.privateserverlink, {localPlayer}) end)
-					end
-				end, 120)
-
 
 				Debug.Toggle(true)
 
