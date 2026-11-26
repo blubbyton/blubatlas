@@ -664,6 +664,13 @@ local cfg = {
 		preset = "Blue",
 		buydrives = false,
 		usedrives = false,
+		usedrivesonrounds = "",
+		struggling = false,
+		driveruns = false,
+		fuzzyalt = false,
+		detectamulets = false,
+		detectbeequips = false,
+		round25opt = false,
 		goldcogmowers = true,
 		trackmobs = false,
 		trackstarsaws = false,
@@ -63859,7 +63866,7 @@ end
 
 								if not upgradeLevel or not roundNumber then
 									logger.warn("Failed to get info for", upgradeName, "Level:", upgradeLevel, "Round:", roundNumber)
-								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber]))) then
+								elseif not (not upgradeSettings or not upgradeSettings[1] or not (not not (upgradeLevel <= upgradeSettings[3]) and (not upgradeSettings[4] or not upgradeSettings[4]["Round " .. roundNumber]))) and not (cfg.rbc.fuzzyalt and upgradeName ~= "Homepage") then
 									if not child.FadeOut.Visible then
 										logger.log("Upgrading", upgradeName, "to level", upgradeLevel)
 										pickUpgrade = true
@@ -69270,6 +69277,45 @@ which bees and get all 3 targets if
 			do
 				local rbcFolder = controls.rbc.AddFolder("Robo Bear Challenge")
 				local rbcQuestFolder = controls.rbc.AddFolder("Quest Settings", true)
+				local rbcOptFolder = controls.rbc.AddFolder("RBC Optimization", true)
+				rbcOptFolder.AddSwitch("Daily Round 25 Optimization", function(enabled)
+					if enabled then
+						cfg.rbc.maxround = 25
+						cfg.rbc.closeroundsonly = true
+						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
+						saveConfig()
+						rbcFolder:Refresh()
+						ui.Notify("Round 25 Opt", "Applied round-25 optimization settings")
+					end
+				end, "rbc", "round25opt")
+				rbcOptFolder.AddDropdown("Hive Color", { "Blue", "Red", "White" }, nil, function(color)
+					cfg.rbc.glitterhivecolor = color
+					cfg.rbc.preset = color
+					if not cfg.rbc.upgrades then cfg.rbc.upgrades = {} end
+					local colorUpgrade = color == "Blue" and "SSD: Blue" or color == "Red" and "SSD: Red" or "SSD: White"
+					if not cfg.rbc.upgrades[colorUpgrade] then cfg.rbc.upgrades[colorUpgrade] = { true, false, 10, false } end
+					cfg.rbc.upgrades[colorUpgrade][1] = true
+					saveConfig()
+					rbcFolder:Refresh()
+					ui.Notify("Hive Color", "Preset set to " .. color)
+				end, "rbc", "glitterhivecolor")
+				rbcOptFolder.AddSwitch("Use Drives On Certain Rounds", nil, "rbc", "usedrivesonrounds")
+				rbcOptFolder.AddSwitch("If Struggling", nil, "rbc", "struggling")
+				rbcOptFolder.AddSwitch("Drive Runs", function(enabled)
+					if enabled then
+						cfg.rbc.buydrives = { Blue = true, Red = true, White = true, Glitched = true }
+						cfg.rbc.usedrives = { Blue = true, Red = true, White = true, Glitched = true }
+						cfg.rbc.maxround = 25
+						cfg.rbc.usedrivesonrounds = "1,2,3,4,5"
+						saveConfig()
+						rbcFolder:Refresh()
+						ui.Notify("Drive Runs", "Applied best drive farming settings")
+					end
+				end, "rbc", "driveruns")
+				rbcOptFolder.AddSwitch("I Have A Fuzzy Alt", nil, "rbc", "fuzzyalt")
+				rbcOptFolder.AddSwitch("Detect Amulets", nil, "rbc", "detectamulets")
+				rbcOptFolder.AddSwitch("Detect Beequips", nil, "rbc", "detectbeequips")
+				rbcOptFolder.Toggle(true, true)
 				local rbcUpgradeFolder = controls.rbc.AddFolder("Upgrade Settings", true)
 				local rbcEquipmentFolder = controls.rbc.AddFolder("Equipment Settings", true)
 				local rbcAmuletFolder = controls.rbc.AddFolder("Amulet Settings", true)
