@@ -52967,7 +52967,7 @@ local qolIcons = {
     if desired then score+=self:Flat(point-desired).Magnitude*0.3 end
     for _,mob in ipairs(mobs) do score+=math.max(0,mob.radius+3-self:Flat(point-mob.position).Magnitude)*10 end
     -- Prefer areas with more flowers (healthier farming spots).
-    local flowerCount=0;local Flowers=workspace:FindFirstChild("Flowers");if Flowers then for _,f in ipairs(Flowers:GetChildren()) do if f:IsA("BasePart") and (f.Position-point).Magnitude<15 then flowerCount+=1 end end end
+    local flowerCount=0;local Flowers=workspace:FindFirstChild("Flowers");if Flowers then for _,f in ipairs(Flowers:GetChildren()) do if f:IsA("BasePart") and (f.Position-point).Magnitude<30 then flowerCount+=1 end end end
     score -= flowerCount*0.5
     if self:Safe(point,root,currentField,mobs,nil,options) then
      if not bestScore or score<bestScore then best,bestScore=point,score end
