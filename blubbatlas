@@ -52967,7 +52967,7 @@ local qolIcons = {
     if desired then score+=self:Flat(point-desired).Magnitude*0.3 end
     for _,mob in ipairs(mobs) do score+=math.max(0,mob.radius+3-self:Flat(point-mob.position).Magnitude)*10 end
     -- Prefer areas with more flowers (healthier farming spots).
-    local flowerCount=0;local Flowers=workspace:FindFirstChild("Flowers");if Flowers then for _,f in ipairs(Flowers:GetChildren()) do if f:IsA("BasePart") and (f.Position-point).Magnitude<30 then flowerCount+=1 end end end
+     local flowerCount=0;if cfg.autofarm.flowerhealth then local Flowers=workspace:FindFirstChild("Flowers");if Flowers then for _,f in ipairs(Flowers:GetChildren()) do if f:IsA("BasePart") and (f.Position-point).Magnitude<(cfg.autofarm.flowerhealthradius or 30) then flowerCount+=1 end end end end
     score -= flowerCount*0.5
     if self:Safe(point,root,currentField,mobs,nil,options) then
      if not bestScore or score<bestScore then best,bestScore=point,score end
@@ -67417,6 +67417,9 @@ do
 				end, "autofarm", "enabled")
 
 				controls["Auto Sprinkler"] = Farming.AddSwitch("Auto Sprinkler", function(n)
+
+				Farming.AddSwitch("Flower Health Routing", nil, "autofarm", "flowerhealth", {Tooltip="Prefer farming areas with more flowers (healthier spots). Avoids low-flower areas."})
+				Farming.AddSlider("Flower Health Radius", nil, 10, 60, "autofarm", "flowerhealthradius", {Left=true,Tooltip="Studs to scan for flower density."})
 					if n and not connections:Get("sprinklers") then
 						connections:Add("sprinklers", workspace.Gadgets.ChildAdded:Connect(function(G)
 							tracked.sprinklers[G] = true
