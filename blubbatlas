@@ -52959,13 +52959,16 @@ local qolIcons = {
   local candidates={}
   if desired and self:Flat(desired-root).Magnitude>2 then table.insert(candidates,desired) end
   for i=0,15 do
-   local angle=i*math.pi/8;table.insert(candidates,root+Vector3.new(math.cos(angle)*8,0,math.sin(angle)*8))
+   for i=0,15 do local angle=i*math.pi/8;table.insert(candidates,root+Vector3.new(math.cos(angle)*12,0,math.sin(angle)*12)) end
   end
   for _,point in ipairs(candidates) do
    if getFieldAt(point)==currentField and (not options.range or not options.origin or self:Flat(point-options.origin).Magnitude<=options.range) then
     local score=self:ToxinRisk(point)+self:ToxinRisk(root:Lerp(point,0.5))*0.5
     if desired then score+=self:Flat(point-desired).Magnitude*0.3 end
     for _,mob in ipairs(mobs) do score+=math.max(0,mob.radius+3-self:Flat(point-mob.position).Magnitude)*10 end
+    -- Prefer areas with more flowers (healthier farming spots).
+    local flowerCount=0;local Flowers=workspace:FindFirstChild("Flowers");if Flowers then for _,f in ipairs(Flowers:GetChildren()) do if f:IsA("BasePart") and (f.Position-point).Magnitude<15 then flowerCount+=1 end end end
+    score -= flowerCount*0.5
     if self:Safe(point,root,currentField,mobs,nil,options) then
      if not bestScore or score<bestScore then best,bestScore=point,score end
     elseif self:Safe(point,root,currentField,{},nil,{}) then
