@@ -663,7 +663,7 @@ local cfg = {
 		enabled = false,
 		preset = "Blue",
 		buydrives = {},
-		usedrives = {},
+		_drivesReset = false,
 		usedrivesonrounds = "",
 		struggling = false,
 		driveruns = false,
@@ -67105,6 +67105,12 @@ do
 	state.config=filename:gsub("%.json$","")
 	local loaded=configStore:Read("atlas/"..filename)
 	if loaded then mergeTable(cfg,loaded) end
+if not cfg.rbc._drivesReset then
+	cfg.rbc.buydrives = {}
+	cfg.rbc.usedrives = {}
+	cfg.rbc._drivesReset = true
+	saveConfig()
+end
 end
 
 if isfile("atlascache-" .. localPlayer.Name .. ".json") then
