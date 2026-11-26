@@ -66235,8 +66235,9 @@ do
    if self:PurchasePending() then return end
    if self.treasureQueued then self:CollectTreasures();return end
    if self:Vicious(cells) then return end
-   if self:LevelSession() then return end
-   if self:BuyJelly() then return end
+    if self:LevelSession() then self.hiveWork=true;return end
+    if self:BuyJelly() then self.hiveWork=true;return end
+    self.hiveWork=false
    if self.editTarget then
     local job=self.editTarget;local chosen
     for _,cell in ipairs(cells) do if cell.id==job.id then chosen=cell;break end end
@@ -66253,6 +66254,7 @@ do
   end)
   if self.tween then self.tween:Cancel();self.tween=nil;state.fasttween=nil end
   self.busy=false;self.worker=nil
+	self.hiveWork=false
   if not ok then self.nextAction=os.clock()+10;self:Status("Progression paused: "..tostring(err));logger.warn(err) end
  end
 end
@@ -66675,7 +66677,7 @@ end
 			end
 
 			reportStatus(1, currentFieldName)
-			goToField()
+			if not (state.hiveProgression and state.hiveProgression.hiveWork) then goToField() end
 
 			if currentFieldName ~= "Mountain Top Field" or not tracked.mondo then
 				if cfg.combat.avoidmobs then
