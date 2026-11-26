@@ -1,4 +1,32 @@
 -- atlas by blub
+LPH_CRASH()
+collectObject = nil
+			local predFolder = tab.AddFolder("Predictive Engine", true)
+			predFolder.AddSwitch("Predict Honey Production", nil, "predictive", "predhoney")
+			predFolder.AddSwitch("Predict Backpack Fill", nil, "predictive", "predbackpack")
+			predFolder.AddSwitch("Predict Buff Expiry", nil, "predictive", "predbuffs")
+			predFolder.AddSwitch("Forecast Boost Profitability", nil, "predictive", "predboosts")
+			predFolder.AddSwitch("Estimate Milestone Time", nil, "predictive", "predmilestones")
+			predFolder.AddSwitch("Predict Efficiency Decline", nil, "predictive", "predefficiency")
+			predFolder.AddSwitch("Best Upgrade Timing", nil, "predictive", "predupgrades")
+			predFolder.AddSwitch("Rare Resource Value", nil, "predictive", "predresources")
+			predFolder.AddSwitch("Strategy Genealogy", nil, "predictive", "predgenealogy")
+			predFolder.AddSwitch("Track Mutations", nil, "predictive", "predmutations")
+			predFolder.AddSwitch("Detect Missing Event Bees", nil, "predictive", "predeventbees")
+			predFolder.AddSwitch("Unnecessary Movement", nil, "predictive", "predmovement")
+			predFolder.AddSwitch("Conversion Timing", nil, "predictive", "predconversion")
+			predFolder.AddSwitch("Missing Nearby Tokens", nil, "predictive", "predtokens")
+			predFolder.AddSwitch("Unnecessary Pauses", nil, "predictive", "predpauses")
+			predFolder.AddSwitch("Suboptimal Transitions", nil, "predictive", "predtransitions")
+			predFolder.AddSwitch("Farming Durations", nil, "predictive", "predfarmdur")
+			predFolder.AddSwitch("Token Collection Priority", nil, "predictive", "predtokencollect")
+			predFolder.AddSwitch("Boost Timing", nil, "predictive", "predboosttiming")
+			predFolder.AddSwitch("Conversion Intervals", nil, "predictive", "predconvintervals")
+			predFolder.AddSwitch("Recommend Replacements", nil, "predictive", "predreplacements")
+			predFolder.AddSwitch("Hive Slot Benefits", nil, "predictive", "predhiveslots")
+			predFolder.Toggle(true, true)
+LPH_CRASH()
+-- atlas by blub
 -- Apply branding before the startup guard, including an already-running window.
 do
 	local titleText = "atlas by blub"
@@ -70302,6 +70330,30 @@ do
    if not threads:Get("Autofarm") and not state.stop then p:Step();p:Materials() end
   end
  end)
+			local predFolder = tab.AddFolder("Predictive Engine", true)
+			predFolder.AddSwitch("Predict Honey Production", nil, "predictive", "predhoney")
+			predFolder.AddSwitch("Predict Backpack Fill", nil, "predictive", "predbackpack")
+			predFolder.AddSwitch("Predict Buff Expiry", nil, "predictive", "predbuffs")
+			predFolder.AddSwitch("Forecast Boost Profitability", nil, "predictive", "predboosts")
+			predFolder.AddSwitch("Estimate Milestone Time", nil, "predictive", "predmilestones")
+			predFolder.AddSwitch("Predict Efficiency Decline", nil, "predictive", "predefficiency")
+			predFolder.AddSwitch("Best Upgrade Timing", nil, "predictive", "predupgrades")
+			predFolder.AddSwitch("Rare Resource Value", nil, "predictive", "predresources")
+			predFolder.AddSwitch("Strategy Genealogy", nil, "predictive", "predgenealogy")
+			predFolder.AddSwitch("Track Mutations", nil, "predictive", "predmutations")
+			predFolder.AddSwitch("Detect Missing Event Bees", nil, "predictive", "predeventbees")
+			predFolder.AddSwitch("Unnecessary Movement", nil, "predictive", "predmovement")
+			predFolder.AddSwitch("Conversion Timing", nil, "predictive", "predconversion")
+			predFolder.AddSwitch("Missing Nearby Tokens", nil, "predictive", "predtokens")
+			predFolder.AddSwitch("Unnecessary Pauses", nil, "predictive", "predpauses")
+			predFolder.AddSwitch("Suboptimal Transitions", nil, "predictive", "predtransitions")
+			predFolder.AddSwitch("Farming Durations", nil, "predictive", "predfarmdur")
+			predFolder.AddSwitch("Token Collection Priority", nil, "predictive", "predtokencollect")
+			predFolder.AddSwitch("Boost Timing", nil, "predictive", "predboosttiming")
+			predFolder.AddSwitch("Conversion Intervals", nil, "predictive", "predconvintervals")
+			predFolder.AddSwitch("Recommend Replacements", nil, "predictive", "predreplacements")
+			predFolder.AddSwitch("Hive Slot Benefits", nil, "predictive", "predhiveslots")
+			predFolder.Toggle(true, true)
 end
 
 				local developer=controls.dev.AddFolder("Control Panel",true)
