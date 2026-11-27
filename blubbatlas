@@ -64633,12 +64633,14 @@ end
 				end
 			end
 
+			local dialog = gameGui.Dialog
+
 			local buyAttempts = 0
 			local cacheData = gameApi:Cache()
 			local Cog = inventory:Get("Cog", true) or 0
 			inventory.time.Cog = nil
 
-			while Cog >= 50 and buyAttempts < 5 do
+			while buyAttempts < 5 do
 				if RunService.Heartbeat:Wait() then
 					buyAttempts += 1
 					local bestDrive = nil
@@ -64647,7 +64649,7 @@ end
 					for k in pairs(driveTypes) do
 						inventory.time[k .. " Drive"] = nil
 
-						if driveCount < 5 and (k ~= "Glitched" or Cog >= 100) and (not bestDrive or driveCount < bestDrive.amount or (driveCount == bestDrive.amount and k == "Glitched")) then
+						if driveCount < 5 and (not bestDrive or driveCount < bestDrive.amount or (driveCount == bestDrive.amount and k == "Glitched")) then
 							bestDrive = { drive = k, amount = driveCount }
 						end
 					end
@@ -64676,6 +64678,9 @@ end
 
 				break
 			end
+
+			local dialog = gameGui.Dialog
+
 
 			local dialog = gameGui.Dialog
 			local roboBear = workspace.NPCs["Robo Bear"]
