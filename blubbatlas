@@ -64667,7 +64667,7 @@ end
 								goTo(vector2, "Digital Bee Shop")
 							end
 
-							task.wait(0.25)
+							while distanceTo(vector2) > 5 do task.wait(0.1) end
 							gameApi:Event("ItemPackageEvent", "Purchase", drivePurchase)
 							cacheData = gameApi:CacheUpdate()
 							cacheData = gameApi:CacheUpdate()
