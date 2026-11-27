@@ -64655,7 +64655,7 @@ end
 					if bestDrive then
 						local drivePurchase = { Category = "Bundle", Type = "Robo Bear " .. bestDrive.drive .. " Drive", Amount = 1 }
 
-						if (bestDrive.drive ~= "Glitched" or cacheData.RoboChallenges.HighestRound > 14) and gameApi:CanBuy(cacheData, nil, drivePurchase) then
+						if gameApi:CanBuy(cacheData, nil, drivePurchase) then
 							local vector2 = Vector3.new(-473, 61, 111)
 							logger.log("Buying", bestDrive.drive, "Drive")
 
