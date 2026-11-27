@@ -42796,7 +42796,7 @@ do
 					if not (k2 == "Amount" or not wantedMod[1]) then
 						for _, popupLine in ipairs(popupLines) do
 							if string.match(popupLine, "%s(.+)") ~= string.match(k2, "%s(.+)") or amuletStatKind(popupLine) ~= amuletStatKind(k2) then
-								continue
+
 							end
 							local amountText, percentSign, statName = string.match(string.gsub(popupLine, ",", ""), "([x+%-]?%d+%.?%d*)(%%?) (.+)")
 
@@ -42820,7 +42820,7 @@ do
 							end
 
 							if not wantedMod[2] then
-								continue
+
 							end
 							return
 						end
@@ -46783,11 +46783,11 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if opts.ignorefield then
 						if not getFieldAt(k.Position) then
 							if not (not opts.avoid or not isPathClear(k.Position, opts.avoid)) then
-								continue
+
 							end
 							comboDistance = distanceTo(k.Position, true)
 							if not (not bestTarget or comboDistance < bestTarget.d) then
-								continue
+
 							end
 							bestTarget = { d = comboDistance, v = k }
 							continue
@@ -48261,11 +48261,11 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if not opts.checkheight or math.abs(k.Position.Y - getRootPart().Position.Y) < 6 then
 						if not opts.ignorefield or getFieldAt(k.Position) then
 							if opts.ignorefield then
-								continue
+
 							end
 
 							if getFieldAt(k.Position) ~= currentField then
-								continue
+
 							end
 						end
 
@@ -50264,7 +50264,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if not touchedMarks[k] then
 						if (not opts.ignorefield or getFieldAt(k.Position)) and (k.Name ~= true or k.ZoneName ~= currentFieldName) then
 							if k.Name == true or not (not opts.ignorefield and getFieldAt(k.Position) == currentField) then
-								continue
+
 							end
 						end
 
@@ -50294,7 +50294,7 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if os.clock() - (k.Name == true and k.Start or dupedtoken.time) > 2 then
 						if not opts.dupedtokensquest then
 							if not tokenPriority.duped[string.match(k.Name == true and k.Icon or dupedtoken.decal.Texture, "%d+")] then
-								continue
+
 							end
 						end
 
@@ -50369,11 +50369,11 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if not opts.checkheight or math.abs(k.Position.Y - getRootPart().Position.Y) < 6 then
 						if not opts.ignorefield or getFieldAt(k.Position) then
 							if opts.ignorefield then
-								continue
+
 							end
 
 							if getFieldAt(k.Position) ~= currentField then
-								continue
+
 							end
 						end
 
@@ -50764,11 +50764,11 @@ Content-Disposition: form-data; name="file[0]"; filename="image.png"
 					if not opts.checkheight or math.abs(k.Position.Y - getRootPart().Position.Y) < 6 then
 						if not opts.ignorefield or getFieldAt(k.Position) then
 							if opts.ignorefield then
-								continue
+
 							end
 
 							if getFieldAt(k.Position) ~= currentField then
-								continue
+
 							end
 						end
 
@@ -54605,11 +54605,11 @@ end
 					if not busyPlanters[currentPlanter.name] and (not cycleCfg.ignoresmoking or not currentPlanter.puffshrooms.Enabled) and not ((currentPlanter.name == "Ticket Planter" or currentPlanter.name == "Sticker Planter" or currentPlanter.name == "Festive Planter") and currentPlanter.percent.Value ~= 1) then
 						if not (currentPlanter.percent.Value == 1 or not (not cycleCfg.harvestatpercentage or not (cycleCfg.harvestat <= currentPlanter.percent.Value * 100))) then
 							if not cycleCfg.harvestaftertime or not cycles.started or not planterInfo[currentPlanter.name] then
-								continue
+
 							end
 							local started = cycles.started
 							if not (cycleCfg.timetoharvest * 3600 < os.time() - started) then
-								continue
+
 							end
 						end
 
@@ -55137,7 +55137,7 @@ end
 							end
 
 							if exitTo2 ~= 1 then
-								continue
+
 							end
 							break
 						end
@@ -55255,7 +55255,7 @@ end
 							end
 
 							if not hasStarsawIcon or not inventory:Use(materialName, true) then
-								continue
+
 							end
 							logger.log("Using material:", materialName)
 							cache.Materials[materialName] = os.time()
@@ -55267,7 +55267,7 @@ end
 					if not (materialName ~= "Gumdrops" or not useOptions.Gumdrops and not buffs.UnlimitedGumdrops) then
 						if not cache.Materials[materialName] then
 							if not inventory:Use(materialName, true) then
-								continue
+
 							end
 							logger.log("Using material:", materialName)
 							cache.Materials[materialName] = os.time()
@@ -55369,7 +55369,7 @@ end
 									saveConfig(true)
 								end
 
-								continue
+
 							end
 
 							local lastUsed = cache.Materials[materialName]
@@ -55381,7 +55381,7 @@ end
 									saveConfig(true)
 								end
 
-								continue
+
 							end
 						end
 
@@ -55442,7 +55442,7 @@ end
 								logger.log("Using material:", materialName)
 								cache.Materials[materialName] = os.time()
 								saveConfig(true)
-								continue
+
 							end
 
 							local lastUsed = cache.Materials[materialName]
@@ -55454,7 +55454,7 @@ end
 									saveConfig(true)
 								end
 
-								continue
+
 							end
 						end
 
@@ -55891,7 +55891,7 @@ end
 							if not input:pressActivateButton() then
 								logger.warn("Failed to activate", label)
 								inventory.time[k .. " Viallessthan10"] = os.clock()
-								continue
+
 							end
 
 							local activateButton = gameGui.ActivateButton
@@ -60337,7 +60337,7 @@ do
 
 							v133 += 1
 							if v131.Parent then
-								continue
+
 							end
 						end
 
@@ -60756,7 +60756,7 @@ do
 							local v132 = tonumber(string.match(k.Name, "%d+"))
 							local HumanoidRootPart = k:FindFirstChild("HumanoidRootPart")
 							if not HumanoidRootPart or not v132 or not state.hiveProgression:ViciousLevelAllowed(v132) then
-								continue
+
 							end
 							local WaitingThorn = workspace.Particles.WTs:FindFirstChild("WaitingThorn")
 							local field = getFieldAt(HumanoidRootPart.Position)
@@ -61572,7 +61572,7 @@ do
 								questData.data = nil
 								skipDialog(dialog, true)
 								task.wait(0.5)
-								continue
+
 							end
 						end
 
@@ -61836,11 +61836,11 @@ do
 							end
 
 							if not (not not (state.bees >= 5) and (v134.Type == "Rage" or string.find(v134.Description, "Ladybug")) and not mobCooldown(monsterSpawners["Ladybug Bush 2"])) then
-								continue
+
 							end
 							questData:Status(v134.Type == "Mob" and "Auto Quest: Defeating Ladybug" or "Auto Quest: Collecting rage tokens from Ladybug", "(" .. v134.Title .. ")")
 							if not v131("Ladybug Bush 2", "Ladybug Bush 3") then
-								continue
+
 							end
 							return
 						end
@@ -61926,7 +61926,7 @@ do
 									error("return", 0)
 								end
 
-								continue
+
 							end
 						end
 
@@ -62007,7 +62007,7 @@ do
 									error("return", 0)
 								end
 
-								continue
+
 							end
 						end
 
@@ -62096,7 +62096,7 @@ do
 									error("return", 0)
 								end
 
-								continue
+
 							end
 						end
 
@@ -63019,7 +63019,7 @@ do
 					if not (v134.Type == "Farm" or v134.Type == "Goo") then
 						if v134.Type ~= "Duped" or not ((v134.Field ~= "Mountain Top Field" or not tracked.mondo) and (v134.Field ~= "Coconut Field" or mobCooldown(monsterSpawners.CoconutCrab))) then
 							if v134.Type ~= "Blooms" then
-								continue
+
 							end
 
 							if v134.Field then
@@ -63031,7 +63031,7 @@ do
 							end
 
 							if not v134.Color then
-								continue
+
 							end
 							local fieldName = nil
 							local ipairs_ = ipairs
@@ -63045,7 +63045,7 @@ do
 							end
 
 							if not fieldName then
-								continue
+
 							end
 							local v137 = "(" .. v134.Title .. ")"
 							questData:Status("Auto Quest: Collecting", string.lower(v134.Color) .. " petals in", fieldName, v137)
@@ -64040,7 +64040,7 @@ end
 								getHumanoid().Health = 0
 								localPlayer.CharacterAdded:Wait()
 								task.wait(1)
-								continue
+
 							end
 						end
 
@@ -64640,7 +64640,7 @@ end
 			local Cog = inventory:Get("Cog", true) or 0
 			inventory.time.Cog = nil
 
-			while buyAttempts < 5 do
+				if true then
 				if RunService.Heartbeat:Wait() then
 					buyAttempts += 1
 					local bestDrive = nil
@@ -64670,16 +64670,16 @@ end
 							while distanceTo(vector2) > 5 do task.wait(0.1) end
 							gameApi:Event("ItemPackageEvent", "Purchase", drivePurchase)
 							cacheData = gameApi:CacheUpdate()
-							cacheData = gameApi:CacheUpdate()
+
 							Cog = inventory:Get("Cog") or 0
 							inventory.time.Cog = nil
 						end
 
-						continue
+
 					end
 				end
 
-				break
+
 			end
 
 
@@ -65377,7 +65377,7 @@ end
 							end
 
 							if alreadyDelivered then
-								continue
+
 							end
 							local dialog = gameGui.Dialog
 							local OnettWithStickers
@@ -65717,7 +65717,7 @@ end
 									end
 								end
 
-								continue
+
 							elseif eventBee ~= "Vicious" then
 								if eventBee == "Gummy" or eventBee == "Vicious" then
 									continue
@@ -69187,7 +69187,7 @@ which bees and get all 3 targets if
 					else
 						for _, otherName in ipairs({ "Moon Amulet", "Star Amulet", "Mutations", "Gifted Basic" }) do
 							if not threads:Get("Auto " .. otherName) then
-								continue
+
 							end
 							ui.Notify("Warning", "Auto " .. otherName .. " is still running")
 							controls["Auto Royal Jelly"].Set(false)
@@ -69213,7 +69213,7 @@ which bees and get all 3 targets if
 					else
 						for _, otherName in ipairs({ "Moon Amulet", "Star Amulet", "Mutations", "Royal Jelly" }) do
 							if not threads:Get("Auto " .. otherName) then
-								continue
+
 							end
 							ui.Notify("Warning", "Auto " .. otherName .. " is still running")
 							controls["Auto Gifted Basic"].Set(false)
@@ -69235,7 +69235,7 @@ which bees and get all 3 targets if
 					else
 						for _, otherName in ipairs({ "Moon Amulet", "Star Amulet", "Royal Jelly", "Gifted Basic" }) do
 							if not threads:Get("Auto " .. otherName) then
-								continue
+
 							end
 							ui.Notify("Warning", "Auto " .. otherName .. " is still running")
 							controls["Auto Mutations"].Set(false)
@@ -71100,7 +71100,7 @@ Are you sure you want to enable it?]])
 							end
 
 							if not ((wait and 5 or 3) < os.clock() - now3) then
-								continue
+
 							end
 							break
 						else
