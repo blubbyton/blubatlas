@@ -64657,7 +64657,7 @@ end
 					if bestDrive then
 						local drivePurchase = { Category = "Bundle", Type = "Robo Bear " .. bestDrive.drive .. " Drive", Amount = 1 }
 
-						if gameApi:CanBuy(cacheData, nil, drivePurchase) then
+						if true then
 							local vector2 = Vector3.new(-473, 61, 111)
 							logger.log("Buying", bestDrive.drive, "Drive")
 
