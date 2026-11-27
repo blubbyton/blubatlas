@@ -64647,7 +64647,7 @@ end
 						local driveCount = inventory:Get(k .. " Drive", true) or 0
 						inventory.time[k .. " Drive"] = nil
 
-						if not (not (driveCount < 5) or not ((not bestDrive or not ((not (driveCount < bestDrive.amount) or k == "Glitched") and (bestDrive.drive ~= "Glitched" or k == "Glitched"))) and (k ~= "Glitched" or not (Cog < 100)))) then
+						if driveCount < 5 and (k ~= "Glitched" or Cog >= 100) and (not bestDrive or driveCount < bestDrive.amount or (driveCount == bestDrive.amount and k == "Glitched")) then
 							bestDrive = { drive = k, amount = driveCount }
 						end
 					end
