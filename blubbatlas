@@ -64666,7 +64666,8 @@ end
 							end
 
 							task.wait(0.25)
-							gameApi:Event("ItemPackageEvent", "Purchase", drivePurchase)
+							local purchaseOk = gameApi:Event("ItemPackageEvent", "Purchase", drivePurchase)
+							if not purchaseOk then break end
 							cacheData = gameApi:CacheUpdate()
 							Cog = inventory:Get("Cog") or 0
 							inventory.time.Cog = nil
