@@ -64647,7 +64647,9 @@ end
 
 					local driveTypes = (cfg.rbc.buydrives and next(cfg.rbc.buydrives)) and cfg.rbc.buydrives or { Blue = true, Red = true, White = true, Glitched = true }
 					for k in pairs(driveTypes) do
+						local driveCount = inventory:Get(k .. " Drive", true) or 0
 						inventory.time[k .. " Drive"] = nil
+
 
 						if driveCount < 5 and (not bestDrive or driveCount < bestDrive.amount or (driveCount == bestDrive.amount and k == "Glitched")) then
 							bestDrive = { drive = k, amount = driveCount }
